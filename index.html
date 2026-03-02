@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 关键视口设置，禁止缩放，体验更像App -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>拼图工具(全平台极速版)</title>
+    <style>
+        /* 基础样式优化 */
+        body { 
+            margin: 0; padding: 10px; 
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom); 
+            background: #f2f4f8; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .box { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        
+        .row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .control-group { flex: 1; display: flex; gap: 8px; align-items: center; }
+        
+        /* 表单控件优化 */
+        select, input[type="number"], input[type="text"] { 
+            padding: 0 10px; border: 1px solid #e0e0e0; border-radius: 8px; flex: 1; height: 42px;
+            font-size: 16px; background: #fafafa; -webkit-appearance: none;
+        }
+        
+        input[type="color"] { 
+            height: 42px; width: 50px; border: none; padding: 0; 
+            border-radius: 6px; background: none; 
+        }
+
+        label { font-size: 14px; color: #555; font-weight: 500; white-space: nowrap; }
+
+        /* 按钮系统 */
+        .btn { 
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 48px; border: none; border-radius: 10px; 
+            background: #007aff; color: white; font-size: 17px; font-weight: 600; 
+            cursor: pointer; box-shadow: 0 3px 6px rgba(0,122,255,0.2);
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn.green { background: #34c759; box-shadow: 0 3px 6px rgba(52,199,89,0.2); }
+        .btn.red { background: #ff3b30; box-shadow: 0 3px 6px rgba(255,59,48,0.2); margin-top: 15px; }
+        
+        .hide { display: none !important; }
+        
+        /* 预览区优化 */
+        #preview { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 15px; 
+            max-height: 300px; overflow-y: auto; /* 防止预览太长 */
+        }
+        .thumb { 
+            aspect-ratio: 1; background: #eee; position: relative; border-radius: 6px; overflow: hidden; 
+        }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        /* 画布容器 */
+        canvas { max-width: 100%; height: auto; border: 1px solid #eee; display: block; margin: 15px auto; background: #fff; }
+        
+        #msg { color: #999; font-size: 12px; text-align: center; margin-top: 10px; }
+        .watermark { text-align: center; color: #ccc; font-size: 12px; margin: 30px 0; }
+        
+        /* 加载动画 */
+        .loading-mask {
+            position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); 
+            display: flex; justify-content: center; align-items: center; color: white; z-index: 999;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 加载遮罩 -->
+<div id="loading" class="loading-mask hide">
+    <div style="font-size: 30px; margin-bottom: 10px;">⏳</div>
+    <div id="loadingText">处理中...</div>
+</div>
+
+<div class="box">
+    <div class="row">
+        <select id="layout">
+            <option value="4" selected>4×4 (16张)</option>
+            <option value="3">3×3 (9张)</option>
+            <option value="5">5×5 (25张)</option>
+            <option value="custom">自定义行列</option>
+        </select>
+        <select id="ratio">
+            <option value="1">正方 1:1</option>
+            <option value="0.75">竖向 3:4</option>
+            <option value="0.5625">全屏 9:16</option>
+        </select>
+    </div>
+
+    <div class="row hide" id="customBox">
+        <input type="number" id="rows" value="4" placeholder="行数" inputmode="numeric">
+        <input type="number" id="cols" value="4" placeholder="列数" inputmode="numeric">
+    </div>
+
+    <div class="row">
+        <div class="control-group">
+            <label>字号</label>
+            <input type="number" id="fontSize" value="120" style="max-width: 80px;" inputmode="numeric">
+        </div>
+        <div class="control-group" style="flex: 0 auto;">
+            <label>颜色</label>
+            <input type="color" id="fontColor" value="#000000">
+        </div>
+    </div>
+
+    <!-- 修复 iOS 点击问题的核心：使用 label 触发 hidden input -->
+    <input type="file" id="file" multiple accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px; overflow: hidden; z-index: -1;">
+    <label for="file" class="btn">
+        ➕ 添加图片 (<span id="count">0</span>)
+    </label>
+    
+    <div id="preview"></div>
+</div>
+
+<div class="box">
+    <button class="btn" onclick="generate()">✨ 生成拼图</button>
+    
+    <div id="result" class="hide">
+        <div id="msg"></div>
+        <canvas id="canvas"></canvas>
+        <button class="btn green" id="dlBtn" onclick="download()">💾 保存图片</button>
+    </div>
+    
+    <button class="btn red" onclick="location.reload()">🗑️ 清空重置</button>
+</div>
+
+<div class="watermark">玉灵溪祝各位老师用的愉快</div>
+
+<script>
+    let images = []; // 存储的是压缩后的 Image 对象
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // 布局联动
+    const layoutSel = document.getElementById('layout');
+    layoutSel.onchange = function() {
+        const isCustom = this.value === 'custom';
+        document.getElementById('customBox').classList.toggle('hide', !isCustom);
+        if(!isCustom) {
+            document.getElementById('rows').value = this.value;
+            document.getElementById('cols').value = this.value;
+        }
+    };
+
+    // UI 工具函数
+    const showLoading = (text) => {
+        document.getElementById('loadingText').innerText = text;
+        document.getElementById('loading').classList.remove('hide');
+    };
+    const hideLoading = () => document.getElementById('loading').classList.add('hide');
+
+    // 图片处理核心：预压缩
+    // 解决 iOS 加载大图白屏和卡顿的关键
+    async function processFiles(files) {
+        if(files.length === 0) return;
+        showLoading(`正在处理 ${files.length} 张图片...`);
+
+        // 延迟一下让 UI 渲染出来 loading
+        await new Promise(r => setTimeout(r, 50));
+
+        // 逐个处理，避免内存峰值
+        for (let file of files) {
+            try {
+                const img = await loadImageAndCompress(file);
+                images.push(img);
+                
+                // 每处理一张更新一下预览，显得流畅
+                const div = document.createElement('div');
+                div.className = 'thumb';
+                div.innerHTML = `<img src="${img.src}">`;
+                document.getElementById('preview').appendChild(div);
+                document.getElementById('count').innerText = images.length;
+            } catch (err) {
+                console.error("图片读取失败", err);
+            }
+        }
+        hideLoading();
+    }
+
+    // 读取并压缩图片 (核心函数)
+    function loadImageAndCompress(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 如果图片太大，在内存 Canvas 中缩小它
+                    // 限制最大边长 1200px (足够拼图用，且内存占用极低)
+                    const maxDim = 1200; 
+                    let w = img.width, h = img.height;
+                    
+                    if (w > maxDim || h > maxDim) {
+                        const scale = maxDim / Math.max(w, h);
+                        w *= scale;
+                        h *= scale;
+                    }
+
+                    const cvs = document.createElement('canvas');
+                    cvs.width = w;
+                    cvs.height = h;
+                    const ctx = cvs.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    // 导出为体积更小的图供后续使用
+                    const newImg = new Image();
+                    newImg.onload = () => resolve(newImg);
+                    newImg.src = cvs.toDataURL('image/jpeg', 0.8);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 绑定文件选择
+    document.getElementById('file').onchange = function(e) {
+        processFiles(Array.from(e.target.files));
+        this.value = ''; // 允许重复选
+    };
+
+    function generate() {
+        if (!images.length) return alert('请先添加图片');
+        showLoading("正在生成...");
+
+        // 异步执行生成，防止卡死 UI
+        setTimeout(() => {
+            const r = parseInt(document.getElementById('rows').value) || 4;
+            const c = parseInt(document.getElementById('cols').value) || 4;
+            const ratio = parseFloat(document.getElementById('ratio').value);
+            const userFontSize = parseInt(document.getElementById('fontSize').value) || 120;
+            const userFontColor = document.getElementById('fontColor').value;
+
+            // 动态调整基准分辨率
+            // iOS 设备保守一点，安卓/PC 高一点
+            let cellW = isIOS ? 800 : 1000;
+            
+            // 如果格子极多，降低分辨率
+            if (r*c > 40) cellW = 600;
+            if (r*c > 100) cellW = 400;
+
+            const cellH = cellW / ratio;
+            const canvas = document.getElementById('canvas');
+            
+            // 计算总宽高
+            let totalW = c * cellW;
+            let totalH = r * cellH;
+
+            // 限制最大像素总量 (iOS Canvas 限制)
+            const maxPixels = isIOS ? 16000000 : 40000000; // iOS 约1600万像素安全线
+            if (totalW * totalH > maxPixels) {
+                const scale = Math.sqrt(maxPixels / (totalW * totalH));
+                totalW *= scale;
+                totalH *= scale;
+                cellW *= scale; // 更新格子大小
+            }
+
+            canvas.width = totalW;
+            canvas.height = totalH;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const limit = Math.min(images.length, r * c); 
+            
+            for (let i = 0; i < limit; i++) {
+                const img = images[i];
+                const col = i % c;
+                const row = Math.floor(i / c);
+                const x = col * cellW;
+                const y = row * (cellW / ratio);
+                const h = cellW / ratio;
+
+                // 裁剪绘制 (Cover)
+                const imgR = img.width / img.height;
+                const tgtR = ratio;
+                let dw = cellW, dh = h, dx = 0, dy = 0;
+
+                if (imgR > tgtR) {
+                    dw = dh * imgR;
+                    dx = (cellW - dw) / 2;
+                } else {
+                    dh = dw / imgR;
+                    dy = (h - dh) / 2;
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(x, y, cellW, h);
+                ctx.clip();
+                ctx.drawImage(img, x + dx, y + dy, dw, dh);
+                ctx.restore();
+
+                // 文字绘制
+                const fontSize = cellW * (userFontSize / 1000);
+                ctx.font = `bold ${fontSize}px -apple-system, sans-serif`; 
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                
+                const tx = x + cellW / 2;
+                const ty = y + h - (cellW * 0.02);
+
+                ctx.lineWidth = fontSize / 10; 
+                ctx.strokeStyle = 'white';
+                ctx.lineJoin = 'round';
+                ctx.strokeText(i + 1, tx, ty);
+
+                ctx.fillStyle = userFontColor;
+                ctx.fillText(i + 1, tx, ty);
+            }
+
+            document.getElementById('result').classList.remove('hide');
+            document.getElementById('msg').innerText = `尺寸: ${Math.round(canvas.width)}x${Math.round(canvas.height)}px`;
+            canvas.scrollIntoView({behavior: "smooth"});
+            hideLoading();
+        }, 100);
+    }
+
+    function download() {
+        const canvas = document.getElementById('canvas');
+        showLoading("正在压缩...");
+
+        setTimeout(() => {
+            const checkSize = (str) => (str.length * 0.75) / 1024 / 1024;
+            
+            let quality = 0.92;
+            let dataURL = canvas.toDataURL('image/jpeg', quality);
+            
+            // 循环压缩至 30MB 以下
+            while (checkSize(dataURL) > 29.5 && quality > 0.1) {
+                quality -= 0.1;
+                dataURL = canvas.toDataURL('image/jpeg', quality);
+            }
+
+            document.getElementById('msg').innerText += ` | 大小: ${checkSize(dataURL).toFixed(2)}MB`;
+
+            if (isIOS) {
+                // iOS 弹窗方案
+                const win = window.open();
+                if(win){
+                    win.document.write('<title>长按保存</title><h2 style="text-align:center;font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + dataURL + '" style="width:100%;"/>');
+                } else {
+                    location.href = dataURL; // 兜底
+                }
+            } else {
+                // 安卓/PC 下载
+                const link = document.createElement('a');
+                link.download = `拼图_${Date.now()}.jpg`;
+                link.href = dataURL;
+                link.click();
+            }
+            
+            hideLoading();
+        }, 100);
+    }
+</script>
+</body>
+</html>
