@@ -7,6 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>拼图工具(全平台极速版)</title>
     <style>
+        /* 全局盒模型修复，解决输入框突出问题 */
+        * { box-sizing: border-box; }
+
         /* 基础样式优化 */
         body { 
             margin: 0; padding: 10px; 
@@ -20,20 +23,20 @@
         .box { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         
         .row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
-        .control-group { flex: 1; display: flex; gap: 8px; align-items: center; }
+        .control-group { flex: 1; display: flex; gap: 5px; align-items: center; justify-content: center;}
         
         /* 表单控件优化 */
         select, input[type="number"], input[type="text"] { 
             padding: 0 10px; border: 1px solid #e0e0e0; border-radius: 8px; flex: 1; height: 42px;
-            font-size: 16px; background: #fafafa; -webkit-appearance: none;
+            font-size: 16px; background: #fafafa; -webkit-appearance: none; width: 100%;
         }
         
         input[type="color"] { 
             height: 42px; width: 50px; border: none; padding: 0; 
-            border-radius: 6px; background: none; 
+            border-radius: 6px; background: none; flex: none;
         }
 
-        label { font-size: 14px; color: #555; font-weight: 500; white-space: nowrap; }
+        label { font-size: 13px; color: #555; font-weight: 500; white-space: nowrap; }
 
         /* 按钮系统 */
         .btn { 
@@ -102,9 +105,14 @@
     </div>
 
     <div class="row">
+        <!-- 新增首号控制 -->
+        <div class="control-group">
+            <label>首号</label>
+            <input type="number" id="startNo" value="1" inputmode="numeric">
+        </div>
         <div class="control-group">
             <label>字号</label>
-            <input type="number" id="fontSize" value="120" style="max-width: 80px;" inputmode="numeric">
+            <input type="number" id="fontSize" value="120" inputmode="numeric">
         </div>
         <div class="control-group" style="flex: 0 auto;">
             <label>颜色</label>
@@ -238,6 +246,8 @@
             const ratio = parseFloat(document.getElementById('ratio').value);
             const userFontSize = parseInt(document.getElementById('fontSize').value) || 120;
             const userFontColor = document.getElementById('fontColor').value;
+            // 获取用户设置的起始序号
+            const startNo = parseInt(document.getElementById('startNo').value) || 1;
 
             // 动态调整基准分辨率
             // iOS 设备保守一点，安卓/PC 高一点
@@ -309,13 +319,16 @@
                 const tx = x + cellW / 2;
                 const ty = y + h - (cellW * 0.02);
 
+                // 计算当前序号：索引 + 起始号
+                const currentNum = i + startNo;
+
                 ctx.lineWidth = fontSize / 10; 
                 ctx.strokeStyle = 'white';
                 ctx.lineJoin = 'round';
-                ctx.strokeText(i + 1, tx, ty);
+                ctx.strokeText(currentNum, tx, ty);
 
                 ctx.fillStyle = userFontColor;
-                ctx.fillText(i + 1, tx, ty);
+                ctx.fillText(currentNum, tx, ty);
             }
 
             document.getElementById('result').classList.remove('hide');
