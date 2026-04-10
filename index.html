@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>拼图工具(多图连发版)</title>
+    <title>拼图工具(进阶版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -17,7 +17,7 @@
         }
         .box { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
-        .control-group { flex: 1; display: flex; gap: 5px; align-items: center; min-width: 120px; }
+        .control-group { flex: 1; display: flex; gap: 5px; align-items: center; min-width: 100px; }
         select, input[type="number"], input[type="text"] { 
             padding: 0 10px; border: 1px solid #e0e0e0; border-radius: 8px; flex: 1; height: 42px;
             font-size: 16px; background: #fafafa; -webkit-appearance: none; width: 100%;
@@ -45,198 +45,159 @@
         }
         .thumb { aspect-ratio: 1; background: #eee; border-radius: 6px; overflow: hidden; position: relative; }
         .thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .thumb .num-badge {
-            position: absolute; top: 3px; left: 3px;
-            background: rgba(0,0,0,0.6); color: white;
-            font-size: 11px; padding: 1px 6px; border-radius: 4px;
-            font-weight: bold; line-height: 1.4;
-        }
-        .thumb .price-badge {
-            position: absolute; top: 3px; right: 3px;
-            background: rgba(255,59,48,0.9); color: white;
-            font-size: 10px; padding: 2px 6px; border-radius: 4px;
-            font-weight: bold; line-height: 1.3;
-        }
-        .thumb .mask-overlay { 
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-            background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center;
-            color: #ff453a; font-weight: bold; font-size: 12px;
-        }
+        .thumb .num-badge { position: absolute; top: 3px; left: 3px; background: rgba(0,0,0,0.6); color: white; font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: bold; }
+        .thumb .price-badge { position: absolute; top: 3px; right: 3px; background: rgba(255,59,48,0.9); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .thumb .mask-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; color: #ff453a; font-weight: bold; font-size: 12px; }
         .result-item { border-top: 2px solid #eee; margin-top: 20px; padding-top: 15px; }
         .result-title { font-weight: bold; color: #333; margin-bottom: 10px; text-align: center; }
         canvas { max-width: 100%; height: auto; border: 1px solid #eee; display: block; margin: 10px auto; background: #fff; }
         #msg { color: #666; font-size: 13px; text-align: center; margin: 10px 0; background: #eef2f6; padding: 8px; border-radius: 6px; }
         .watermark { text-align: center; color: #ccc; font-size: 12px; margin: 30px 0; }
-        .loading-mask {
-            position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); 
-            display: flex; justify-content: center; align-items: center; color: white; z-index: 999;
-            flex-direction: column;
-        }
-        .info-bar {
-            font-size: 13px; text-align: center; margin: 10px 0; padding: 8px 12px; border-radius: 6px;
-        }
+        .loading-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; color: white; z-index: 999; flex-direction: column; }
+        .info-bar { font-size: 13px; text-align: center; margin: 10px 0; padding: 8px 12px; border-radius: 6px; }
         .info-bar.purple { color: #5856d6; background: #f5f5ff; border: 1px solid #e0e0ff; }
         .info-bar.danger { color: #ff3b30; background: #fff5f5; border: 1px solid #ffe0e0; }
         .info-bar.orange { color: #ff9500; background: #fff8ee; border: 1px solid #ffe5c4; }
         .btn-row-2 { display: flex; gap: 10px; margin-top: 10px; }
         .btn-row-2 .btn { flex: 1; }
-
-        .price-list {
-            max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; 
-            border-radius: 8px; padding: 8px; background: #fafafa; margin-top: 10px;
-        }
-        .price-item {
-            display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
-        }
-        .price-item label {
-            min-width: 60px; font-size: 13px; color: #666;
-        }
-        .price-item input {
-            flex: 1; height: 36px; padding: 0 8px; border: 1px solid #ddd; 
-            border-radius: 6px; font-size: 14px;
-        }
-
-        .tutorial-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); z-index: 2000;
-            display: flex; justify-content: center; align-items: center;
-            padding: 20px;
-        }
-        .tutorial-card {
-            background: #fff; border-radius: 20px; padding: 28px 22px;
-            max-width: 400px; width: 100%; max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: tutorialIn 0.4s ease;
-        }
-        @keyframes tutorialIn {
-            from { transform: scale(0.85) translateY(30px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        .tutorial-card h2 {
-            text-align: center; margin: 0 0 6px 0; font-size: 22px; color: #333;
-        }
-        .tutorial-card .subtitle {
-            text-align: center; color: #999; font-size: 13px; margin-bottom: 20px;
-        }
-        .tutorial-step {
-            display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start;
-        }
-        .tutorial-step .step-icon {
-            width: 36px; height: 36px; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; flex-shrink: 0; color: white; font-weight: bold;
-        }
-        .tutorial-step .step-content h3 {
-            margin: 0 0 3px 0; font-size: 15px; color: #333;
-        }
-        .tutorial-step .step-content p {
-            margin: 0; font-size: 13px; color: #777; line-height: 1.5;
-        }
-        .tutorial-tip {
-            background: #fffbe6; border: 1px solid #ffe58f; border-radius: 10px;
-            padding: 10px 14px; margin: 16px 0; font-size: 13px; color: #8c6900; line-height: 1.5;
-        }
-        .tutorial-btn {
-            display: block; width: 100%; height: 50px; border: none; border-radius: 12px;
-            background: linear-gradient(135deg, #007aff, #5856d6); color: white;
-            font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(0,122,255,0.3);
-            transition: opacity 0.2s;
-        }
+        .price-list { max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; background: #fafafa; margin-top: 10px; }
+        .price-item { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .price-item label { min-width: 60px; font-size: 13px; color: #666; }
+        .price-item input { flex: 1; height: 36px; padding: 0 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .tutorial-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .tutorial-card { background: #fff; border-radius: 20px; padding: 28px 22px; max-width: 400px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: tutorialIn 0.4s ease; }
+        @keyframes tutorialIn { from { transform: scale(0.85) translateY(30px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        .tutorial-card h2 { text-align: center; margin: 0 0 6px 0; font-size: 22px; color: #333; }
+        .tutorial-card .subtitle { text-align: center; color: #999; font-size: 13px; margin-bottom: 20px; }
+        .tutorial-step { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+        .tutorial-step .step-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: white; font-weight: bold; }
+        .tutorial-step .step-content h3 { margin: 0 0 3px 0; font-size: 15px; color: #333; }
+        .tutorial-step .step-content p { margin: 0; font-size: 13px; color: #777; line-height: 1.5; }
+        .tutorial-tip { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 10px; padding: 10px 14px; margin: 16px 0; font-size: 13px; color: #8c6900; line-height: 1.5; }
+        .tutorial-btn { display: block; width: 100%; height: 50px; border: none; border-radius: 12px; background: linear-gradient(135deg, #007aff, #5856d6); color: white; font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,122,255,0.3); }
         .tutorial-btn:active { opacity: 0.8; }
-        .tutorial-footer {
-            text-align: center; margin-top: 12px; font-size: 12px; color: #bbb;
-        }
-
-        .switch-wrapper {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-        }
-        .switch {
-            position: relative; display: inline-block; width: 50px; height: 28px;
-        }
+        .tutorial-footer { text-align: center; margin-top: 12px; font-size: 12px; color: #bbb; }
+        .switch-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .switch-wrapper:last-child { margin-bottom: 0; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .3s; border-radius: 28px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px;
-            background-color: white; transition: .3s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: #34c759; }
         input:checked + .slider:before { transform: translateX(22px); }
+        .watermark-editor-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+        .watermark-editor { background: #fff; border-radius: 16px; padding: 20px; max-width: 380px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); margin: 0 10px; }
+        .watermark-editor h3 { margin: 0 0 15px 0; text-align: center; color: #333; font-size: 18px; position: relative; padding-right: 30px; }
+        .close-watermark-btn { position: absolute; top: -5px; right: 0; background: none; border: none; font-size: 24px; color: #999; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .close-watermark-btn:active { background-color: #f0f0f0; }
+        .watermark-preview-box { width: 100%; aspect-ratio: var(--preview-ratio, 1); background: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc); background-size: 16px 16px; background-position: 0 0, 8px 8px; border: 2px solid #ddd; border-radius: 10px; position: relative; overflow: hidden; margin-bottom: 15px; cursor: move; touch-action: none; }
+        .watermark-controls { margin-bottom: 10px; }
+        .watermark-controls label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; color: #666; }
+        .watermark-controls input[type="range"] { width: 100%; height: 28px; }
+        .watermark-editor-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .watermark-editor-btns button { flex: 1; height: 44px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .watermark-editor-btns .confirm { background: #34c759; color: white; }
+        .watermark-editor-btns .cancel { background: #8e8e93; color: white; }
+        .wm-btn-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        .wm-btn-group button { flex: 1; height: 38px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #007aff; color: white; }
+        .wm-btn-group button.purple { background: #5856d6; }
+        .wm-btn-group button.orange { background: #ff9500; }
+        .batch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0; }
+        .batch-thumb { aspect-ratio: 1; background: #f0f0f0; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid #ddd; }
+        .batch-thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+        .batch-thumb .batch-num { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .download-progress { text-align: center; color: #666; font-size: 14px; margin: 10px 0; }
+        .mask-controls { margin-bottom: 10px; }
+        .mask-controls label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; color: #666; }
+        .mask-controls input[type="range"] { width: 100%; height: 28px; }
+        .mask-type-selector { display: flex; gap: 10px; margin-bottom: 12px; }
+        .mask-type-selector button { flex: 1; height: 38px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #f0f0f0; color: #666; }
+        .mask-type-selector button.active { background: #007aff; color: white; }
+        .mask-type-selector button.red-cross { background: #ff3b30; color: white; }
+        .mask-type-selector button.black-mask { background: #333; color: white; }
+        .archive-hint { font-size: 11px; color: #888; text-align: center; margin: 5px 0 0 0; padding: 4px 8px; background: #f9f9f9; border-radius: 6px; }
+        .batch-price-box { background: #f8f9fa; border-radius: 10px; padding: 12px; margin-bottom: 12px; border: 1px solid #e9ecef; }
+        .batch-price-box .row { margin-bottom: 8px; }
+        .batch-price-box .row:last-child { margin-bottom: 0; }
+        .batch-price-box .btn { height: 40px; font-size: 14px; background: #34c759; }
+        .price-tips { font-size: 12px; color: #666; margin-top: 8px; text-align: center; background: #f5f5f5; padding: 6px 10px; border-radius: 6px; line-height: 1.4; }
+        /* 文件选择按钮包装器 */
+        .file-btn-wrap { position: relative; width: 100%; overflow: hidden; }
+        .file-btn-wrap input[type="file"] {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; z-index: 10; cursor: pointer; font-size: 200px;
+        }
+        .file-btn-wrap .btn { pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="tutorial" class="tutorial-overlay hide">
     <div class="tutorial-card">
-        <h2>👋 欢迎使用拼图工具</h2>
-        <div class="subtitle">首次使用，花30秒了解一下吧</div>
-
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#007aff;">1</div>
-            <div class="step-content">
-                <h3>📸 添加图片</h3>
-                <p>点击「添加图片」按钮选择多张照片，支持一次选多张。</p>
+        <h2>工具功能速览</h2>
+        <div class="subtitle">首次使用，花点时间熟悉一下吧</div>
+        <div class="tutorial-step"><div class="step-icon" style="background:#007aff;">📸</div><div class="step-content"><h3>添加图片</h3><p>点击「添加图片」选择多张照片。</p></div></div>
+        <div class="tutorial-step"><div class="step-icon" style="background:#34c759;">✨</div><div class="step-content"><h3>调整参数</h3><p>布局、比例、生成张数等。</p></div></div>
+        <div class="tutorial-step"><div class="step-icon" style="background:#007aff;">🔢</div><div class="step-content"><h3>序号功能</h3><p>图片底部显示序号，可自行设置序号字号大小、序号数字颜色、序号数字外描边。支持每张拼图独立编号。</p></div></div>
+        <div class="tutorial-step"><div class="step-icon" style="background:#ff3b30;">💰</div><div class="step-content"><h3>标价功能</h3><p>支持单个和批量连续设置价格，如1,3,5单独数字或6-18连续数字</p></div></div>
+        <div class="tutorial-step"><div class="step-icon" style="background:#ff9500;">🎨</div><div class="step-content"><h3>水印功能</h3><p>支持透明度、一键铺满、满屏平铺，可随时重新调整。</p></div></div>
+        <div class="tutorial-tip">💡 生成3张及以上时，支持<b>一键批量ZIP打包下载</b>！</div>
+        
+        <div style="background:#f0f7ff;border:1px solid #c8e0ff;border-radius:10px;padding:12px 14px;margin:12px 0;font-size:12px;color:#333;line-height:1.7;">
+            <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:#007aff;">📱 浏览器兼容说明（安卓测试结果）</div>
+            <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;">
+                <span style="background:#34c759;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:bold;">⭐ 最佳</span>
+                <span><b>Chrome</b>：各方面兼容性最好，最建议使用</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;">
+                <span style="background:#34c759;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:bold;">👍 推荐</span>
+                <span><b>雨见浏览器</b>：多张下载无多余弹窗，体验流畅</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;">
+                <span style="background:#ff9500;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:bold;">⚠️ 可用</span>
+                <span><b>X浏览器 / Via</b>：功能正常，但多张下载会弹出多个下载弹窗</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:flex-start;">
+                <span style="background:#ff3b30;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:bold;">⚠️ 注意</span>
+                <span><b>Edge</b>：逐张下载仅支持2张，2张以上请使用<b>ZIP打包下载</b></span>
             </div>
         </div>
 
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#34c759;">2</div>
-            <div class="step-content">
-                <h3>⚙️ 调整参数</h3>
-                <p><b>布局</b>：选择几行几列（如4×4就是16张一页）<br>
-                <b>比例</b>：正方形、竖屏、横屏等<br>
-                <b>首号</b>：序号从几开始编<br>
-                <b>字号</b>：数字大小<br>
-                <b>生成张数</b>：一次出几张拼图<br>
-                <b>颜色</b>：序号文字颜色</p>
-            </div>
+        <div style="background:#fff5f5;border:1px solid #ffccc7;border-radius:10px;padding:12px 14px;margin:12px 0;font-size:13px;color:#333;line-height:1.6;text-align:center;">
+            <div style="font-size:15px;font-weight:bold;margin-bottom:6px;">🌸 关于作者</div>
+            <div style="color:#666;margin-bottom:10px;">该工具全部功能由 <b style="color:#ff2442;">玉灵溪</b> <br>独立制作、测试、修改、发布<br>有需要增加的功能欢迎私信！</div>
+            <a href="https://xhslink.com/m/1cqXF0kIXtx" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#ff2442,#ff6680);color:#fff;text-decoration:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:bold;box-shadow:0 3px 10px rgba(255,36,66,0.3);">📕 访问我的小红书主页</a>
         </div>
-
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#ff3b30;">💰</div>
-            <div class="step-content">
-                <h3>💰 标价功能（推荐用法）</h3>
-                <p>① 先在<b>「统一标价」</b>填写通用价格（如￥99）<br>
-                ② 切换到<b>「单独标价」</b>，所有框会自动填好<br>
-                ③ 只修改需要不同价格的图片即可</p>
-            </div>
-        </div>
-
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#ff9500;">3</div>
-            <div class="step-content">
-                <h3>✨ 生成与保存</h3>
-                <p>点击「开始生成拼图」后，每张拼图下面都有独立的保存按钮。</p>
-            </div>
-        </div>
-
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#5856d6;">4</div>
-            <div class="step-content">
-                <h3>📦 存档功能</h3>
-                <p>点击「保存存档」后，图片会保存在浏览器本地。<b>关闭页面后重新打开</b>，点击「恢复存档」即可找回图片，无需重新添加。</p>
-            </div>
-        </div>
-
-        <div class="tutorial-step">
-            <div class="step-icon" style="background:#af52de;">5</div>
-            <div class="step-content">
-                <h3>🖤 遮罩功能</h3>
-                <p>存档后解锁。输入序号（如 <b>1,3,5</b> 或 <b>2-8</b>），对应的图片会被黑色遮罩覆盖。<br>
-                <b>可多次叠加</b>：每次输入新序号会追加，不会替换之前的。<br>
-                <b>只有点「清除所有遮罩」才会清除</b>，刷新页面也不会丢。</p>
-            </div>
-        </div>
-
-        <div class="tutorial-tip">
-            💡 <b>小技巧</b>：上传50张图，设置4×4（每页16张），生成张数填3，就能自动按顺序生成3张拼图，序号连续不断。
-        </div>
-
-        <button class="tutorial-btn" onclick="closeTutorial()">👍 我知道了，开始使用</button>
+        
+        <button class="tutorial-btn" onclick="closeTutorial()">开始使用</button>
         <div class="tutorial-footer">本提示仅显示一次</div>
+    </div>
+</div>
+
+<div id="watermarkEditor" class="watermark-editor-overlay hide">
+    <div class="watermark-editor">
+        <div style="position: relative;">
+            <h3>🎨 调整水印</h3>
+            <button class="close-watermark-btn" onclick="cancelWatermarkEdit()">×</button>
+        </div>
+        <div class="watermark-preview-box" id="watermarkPreviewBox"></div>
+        <div class="wm-btn-group">
+            <button onclick="fillWatermark()">📐 铺满</button>
+            <button class="purple" onclick="centerWatermark()">⊙ 居中</button>
+            <button class="orange" id="tileBtn" onclick="toggleTile()">平铺:关</button>
+        </div>
+        <div class="watermark-controls">
+            <label><span>大小</span><span id="watermarkSizeLabel">20%</span></label>
+            <input type="range" id="watermarkSizeSlider" min="3" max="500" value="20" oninput="updateWatermarkSize()">
+        </div>
+        <div class="watermark-controls">
+            <label><span>透明度</span><span id="watermarkOpacityLabel">100%</span></label>
+            <input type="range" id="watermarkOpacitySlider" min="5" max="100" value="100" oninput="updateWatermarkOpacity()">
+        </div>
+        <div class="watermark-editor-btns">
+            <button class="cancel" onclick="cancelWatermarkEdit()">取消</button>
+            <button class="confirm" onclick="confirmWatermarkEdit()">✓ 确定</button>
+        </div>
     </div>
 </div>
 
@@ -247,7 +208,7 @@
 
 <div class="box">
     <div style="text-align:right; margin-bottom:8px;">
-        <span onclick="showTutorial()" style="font-size:13px; color:#007aff; cursor:pointer;">❓ 使用帮助</span>
+        <span onclick="showTutorial()" style="font-size:13px; color:#007aff; cursor:pointer;">❓ 帮助</span>
     </div>
     <div class="row">
         <div class="control-group">
@@ -256,722 +217,1178 @@
                 <option value="4" selected>4×4 (16张)</option>
                 <option value="3">3×3 (9张)</option>
                 <option value="5">5×5 (25张)</option>
-                <option value="custom">自定义行列</option>
+                <option value="custom">自定义</option>
             </select>
         </div>
         <div class="control-group">
             <label>比例</label>
             <select id="ratio">
-                <option value="1">正方 1:1</option>
-                <option value="0.75">竖向 3:4</option>
-                <option value="0.5625">竖向 9:16</option>
-                <option value="1.3333">横向 4:3</option>
-                <option value="1.7778">横向 16:9</option>
+                <option value="1">1:1</option>
+                <option value="0.75">3:4</option>
+                <option value="0.5625">9:16</option>
+                <option value="1.3333">4:3</option>
+                <option value="1.7778">16:9</option>
             </select>
         </div>
     </div>
-
     <div class="row hide" id="customBox">
-        <div class="control-group"><label>行数</label><input type="number" id="rows" value="4" inputmode="numeric"></div>
-        <div class="control-group"><label>列数</label><input type="number" id="cols" value="4" inputmode="numeric"></div>
+        <div class="control-group"><label>行</label><input type="number" id="rows" value="4" inputmode="numeric"></div>
+        <div class="control-group"><label>列</label><input type="number" id="cols" value="4" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+        <div class="control-group"><label>生成张数</label><input type="number" id="outCount" value="1" min="1" inputmode="numeric"></div>
     </div>
 
-    <div class="row">
-        <div class="control-group"><label>首号</label><input type="number" id="startNo" value="1" inputmode="numeric"></div>
-        <div class="control-group"><label>字号</label><input type="number" id="fontSize" value="120" inputmode="numeric"></div>
-    </div>
-    
-    <div class="row">
-        <div class="control-group">
-            <label>生成张数</label>
-            <input type="number" id="outCount" value="1" min="1" inputmode="numeric">
-        </div>
-        <div class="control-group" style="flex: 0 auto;"><label>颜色</label><input type="color" id="fontColor" value="#000000"></div>
+    <!-- 主图片上传：透明input覆盖在按钮上方，用户直接点击input -->
+    <div class="file-btn-wrap">
+        <input type="file" id="file" multiple accept="image/*">
+        <div class="btn">➕ 添加图片 (<span id="count">0</span>)</div>
     </div>
 
-    <input type="file" id="file" multiple accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px; overflow: hidden; z-index: -1;">
-    <label for="file" class="btn">➕ 添加图片 (<span id="count">0</span>)</label>
-    
     <div id="preview" class="hide"></div>
 </div>
 
 <div class="box">
     <div class="switch-wrapper">
-        <label class="switch">
-            <input type="checkbox" id="priceToggle" onchange="togglePriceMode()">
-            <span class="slider"></span>
-        </label>
-        <label style="font-size:15px; color:#333; font-weight:600;">💰 启用标价功能</label>
+        <label class="switch"><input type="checkbox" id="numberToggle" onchange="toggleNumberMode()"><span class="slider"></span></label>
+        <label style="font-size:15px;color:#333;font-weight:600;">🔢 序号</label>
     </div>
+    <div id="numberPanel" class="hide">
+    <div class="row">
+        <div class="control-group"><label>首号</label><input type="number" id="startNo" value="1" inputmode="numeric"></div>
+        <div class="control-group"><label>字号</label><input type="number" id="fontSize" value="120" inputmode="numeric"></div>
+    </div>
+    <div class="switch-wrapper">
+        <label class="switch"><input type="checkbox" id="sameStartToggle"><span class="slider"></span></label>
+        <label style="font-size:13px;color:#333;font-weight:500;">每张拼图从同一首号开始</label>
+    </div>
+    <div id="sameStartHint" class="hide" style="font-size:12px;color:#ff9500;background:#fff8ee;border:1px solid #ffe5c4;border-radius:6px;padding:6px 10px;margin-bottom:10px;text-align:center;">
+        每张拼图的序号都从同一首号开始，不再连续递增
+    </div>
+    <div class="row" style="margin-bottom:0;">
+        <div class="control-group" style="flex:0 auto;"><label>字色</label><input type="color" id="fontColor" value="#000000"></div>
+        <div class="control-group" style="flex:0 auto;"><label>描边</label><input type="color" id="strokeColor" value="#ffffff"></div>
+    </div>
+</div>
+</div>
 
+<div class="box">
+    <div class="switch-wrapper">
+        <label class="switch"><input type="checkbox" id="watermarkToggle" onchange="toggleWatermarkMode()"><span class="slider"></span></label>
+        <label style="font-size:15px;color:#333;font-weight:600;">🎨 水印</label>
+    </div>
+    <div id="watermarkPanel" class="hide">
+        <!-- 水印上传：同样透明input覆盖 -->
+        <div class="file-btn-wrap">
+            <input type="file" id="watermarkFile" accept="image/png,image/webp,image/svg+xml">
+            <div class="btn small" style="background:#ff9500;">📤 上传水印</div>
+        </div>
+        <div id="watermarkStatus" class="hide">
+            <div class="info-bar orange" id="watermarkInfo">✅ 水印已设置</div>
+            <div class="btn-row-2">
+                <button class="btn small" style="background:#007aff;" onclick="editWatermark()">✏️ 调整</button>
+                <button class="btn small" style="background:#8e8e93;" onclick="clearWatermark()">清除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="box">
+    <div class="switch-wrapper">
+        <label class="switch"><input type="checkbox" id="priceToggle" onchange="togglePriceMode()"><span class="slider"></span></label>
+        <label style="font-size:15px;color:#333;font-weight:600;">💰 标价</label>
+    </div>
     <div id="pricePanel" class="hide">
         <div class="row" style="margin-bottom:8px;">
             <select id="priceMode" onchange="switchPriceMode()">
-                <option value="unified">统一标价（所有图片同价）</option>
-                <option value="individual">单独标价（基于统一价修改）</option>
+                <option value="unified">统一标价</option>
+                <option value="individual">单独/批量标价</option>
             </select>
         </div>
-
-        <div id="unifiedPriceBox">
-            <div class="row">
-                <input type="text" id="unifiedPrice" placeholder="输入统一标价，如：￥99" oninput="applyUnifiedPrice()">
-            </div>
-        </div>
-
+        <div id="unifiedPriceBox"><div class="row"><input type="text" id="unifiedPrice" placeholder="如：￥99" oninput="applyUnifiedPrice()"></div></div>
         <div id="individualPriceBox" class="hide">
-            <div class="info-bar orange">💡 所有输入框已自动填充统一价格，只需修改个别不同价格的图片</div>
+            <div class="info-bar orange">💡 先批量设置，再单独微调</div>
+            <div class="batch-price-box">
+                <div class="row"><input type="text" id="batchPriceNumbers" placeholder="序号，如: 1,3,5 或 6-18"></div>
+                <div class="row"><input type="text" id="batchPriceValue" placeholder="价格，如：￥99"></div>
+                <div class="row"><button class="btn" onclick="applyBatchPrice()">💰 批量设置</button></div>
+            </div>
+            <div class="price-tips">支持：单个(1,3,5) 或 连续(6-18)</div>
             <div class="price-list" id="priceList"></div>
         </div>
     </div>
 </div>
 
 <div class="box">
-    <button class="btn" style="background:#5856d6; box-shadow:0 3px 6px rgba(88,86,214,0.2);" onclick="saveArchive()">📦 保存存档到本地</button>
-    
-    <div id="archiveStatus" class="hide">
-        <div class="info-bar purple" id="archiveInfo"></div>
-        <div class="btn-row-2">
-            <button class="btn small" style="background:#ff9500; box-shadow:0 3px 6px rgba(255,149,0,0.2);" onclick="restoreArchive()">📂 恢复存档</button>
-            <button class="btn small" style="background:#8e8e93; box-shadow:0 3px 6px rgba(142,142,147,0.2);" onclick="deleteArchive()">🗑️ 删除存档</button>
-        </div>
+    <div class="switch-wrapper">
+        <label class="switch"><input type="checkbox" id="maskToggle" onchange="toggleMaskMode()"><span class="slider"></span></label>
+        <label style="font-size:15px;color:#333;font-weight:600;">🖤 遮罩</label>
     </div>
-    
-    <div id="maskSection" class="hide">
-        <div style="height:12px;"></div>
-        <div class="row">
-            <input type="text" id="maskInput" placeholder="输入要遮罩的序号，如: 1,3,5 或 2-8">
+    <div id="maskPanel" class="hide">
+        <div class="mask-type-selector">
+            <button id="blackMaskBtn" class="black-mask active" onclick="setMaskType('black')">黑遮罩</button>
+            <button id="redCrossBtn" class="red-cross" onclick="setMaskType('red-cross')">红叉</button>
+        </div>
+        <div class="mask-controls">
+            <label><span>透明度</span><span id="maskOpacityLabel">100%</span></label>
+            <input type="range" id="maskOpacitySlider" min="10" max="100" value="100" oninput="updateMaskOpacity()">
+        </div>
+        <div class="row" style="margin-top: 12px;">
+            <input type="text" id="maskInput" placeholder="遮罩序号，如: 1,3,5 或 2-8">
         </div>
         <div class="row" style="margin-bottom:0;">
-            <button class="btn" style="background:#af52de; box-shadow:0 3px 6px rgba(175,82,222,0.2);" onclick="applyMask()">🖤 叠加遮罩</button>
+            <button class="btn" style="background:#af52de;" onclick="applyMask()">🖤 应用遮罩</button>
         </div>
         <div id="maskStatus" class="hide">
             <div class="info-bar danger" id="maskInfo"></div>
             <div class="row" style="margin-bottom:0;">
-                <button class="btn" style="background:#8e8e93; box-shadow:0 3px 6px rgba(142,142,147,0.2);" onclick="clearMask()">✖ 清除所有遮罩</button>
+                <button class="btn" style="background:#8e8e93;" onclick="clearMask()">✖ 清除遮罩</button>
             </div>
         </div>
     </div>
 </div>
 
 <div class="box">
-    <div id="msg">请先添加图片</div>
+    <button class="btn" style="background:#5856d6;" onclick="saveArchive()">📦 保存存档</button>
+    <div class="archive-hint">存档会保存所有导入的图片</div>
+    <div id="archiveStatus" class="hide">
+        <div class="info-bar purple" id="archiveInfo"></div>
+        <div class="btn-row-2">
+            <button class="btn small" style="background:#ff9500;" onclick="restoreArchive()">📂 恢复</button>
+            <button class="btn small" style="background:#8e8e93;" onclick="deleteArchive()">🗑️ 删除</button>
+        </div>
+    </div>
+</div>
 
+<div class="box">
+    <div id="msg">请先添加图片</div>
     <button class="btn" onclick="generateAll()">✨ 开始生成拼图</button>
-    
     <div id="resultsContainer"></div>
-    
     <button class="btn red" onclick="location.reload()">🔄 刷新页面</button>
 </div>
 
-<div class="watermark">玉灵溪祝各位老师用的愉快</div>
+<div class="watermark">
+    <div>玉灵溪祝各位老师用的愉快</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <script>
-    let images = []; 
-    let maskedNums = new Set();
-    let prices = {};
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    
-    const layoutSel = document.getElementById('layout');
-    const outCountInput = document.getElementById('outCount');
-    const msgBox = document.getElementById('msg');
+var images = [];
+var maskedNums = new Set();
+var prices = {};
+var watermarkConfig = null;
+var generatedCanvases = [];
+var maskType = 'black';
+var maskOpacity = 1;
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+var isAndroid = /Android/i.test(navigator.userAgent);
+var layoutSel = document.getElementById('layout');
+var outCountInput = document.getElementById('outCount');
+var msgBox = document.getElementById('msg');
 
-    function showTutorial() {
-        document.getElementById('tutorial').classList.remove('hide');
-    }
-    function closeTutorial() {
-        document.getElementById('tutorial').classList.add('hide');
-        localStorage.setItem('puzzleTutorialDone', '1');
-    }
-    if(!localStorage.getItem('puzzleTutorialDone')) {
-        showTutorial();
-    }
+/* ========== 教程 ========== */
+function showTutorial() { document.getElementById('tutorial').classList.remove('hide'); }
+function closeTutorial() { document.getElementById('tutorial').classList.add('hide'); localStorage.setItem('puzzleTutorialDone', '1'); }
+if (!localStorage.getItem('puzzleTutorialDone')) { setTimeout(showTutorial, 500); }
 
-    /* ========== 标价功能（改进版）========== */
-    function togglePriceMode() {
-        const enabled = document.getElementById('priceToggle').checked;
-        document.getElementById('pricePanel').classList.toggle('hide', !enabled);
-        if(enabled && images.length > 0) {
-            switchPriceMode();
+/* ========== 序号 ========== */
+function toggleNumberMode() {
+    document.getElementById('numberPanel').classList.toggle('hide', !document.getElementById('numberToggle').checked);
+    rebuildPreview();
+}
+
+document.getElementById('sameStartToggle').addEventListener('change', function() {
+    document.getElementById('sameStartHint').classList.toggle('hide', !this.checked);
+});
+
+/* ========== 水印变量 ========== */
+var tempWatermarkImg = null;
+var tempWatermarkX = 0.5;
+var tempWatermarkY = 0.5;
+var tempWatermarkSize = 0.2;
+var tempWatermarkOpacity = 1;
+var tempWatermarkRepeat = false;
+var isDragging = false;
+
+function toggleWatermarkMode() {
+    document.getElementById('watermarkPanel').classList.toggle('hide', !document.getElementById('watermarkToggle').checked);
+}
+
+/* ========== 文件选择事件（直接绑定change） ========== */
+document.getElementById('file').addEventListener('change', function(e) {
+    var files = Array.from(e.target.files);
+    if (files.length > 0) processFiles(files);
+    this.value = '';
+});
+
+document.getElementById('watermarkFile').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+        var img = new Image();
+        img.onload = function() {
+            tempWatermarkImg = img;
+            tempWatermarkX = 0.5; tempWatermarkY = 0.5;
+            tempWatermarkSize = 0.2; tempWatermarkOpacity = 1;
+            tempWatermarkRepeat = false;
+            showWatermarkEditor();
+        };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+    this.value = '';
+});
+
+function editWatermark() {
+    if (!watermarkConfig) return;
+    tempWatermarkImg = watermarkConfig.img;
+    tempWatermarkX = watermarkConfig.x; tempWatermarkY = watermarkConfig.y;
+    tempWatermarkSize = watermarkConfig.size; tempWatermarkOpacity = watermarkConfig.opacity || 1;
+    tempWatermarkRepeat = watermarkConfig.repeat || false;
+    showWatermarkEditor();
+}
+
+function showWatermarkEditor() {
+    document.getElementById('watermarkEditor').classList.remove('hide');
+    var ratio = parseFloat(document.getElementById('ratio').value);
+    var previewBox = document.getElementById('watermarkPreviewBox');
+    previewBox.style.setProperty('--preview-ratio', ratio);
+    previewBox.innerHTML = '';
+    document.getElementById('watermarkSizeSlider').value = tempWatermarkSize * 100;
+    document.getElementById('watermarkOpacitySlider').value = tempWatermarkOpacity * 100;
+    updateTileBtn();
+    setTimeout(function() { renderWatermarkPreview(); }, 50);
+    previewBox.onmousedown = previewBox.ontouchstart = function(e) {
+        e.preventDefault(); isDragging = true; updateWatermarkPosition(e);
+    };
+    document.onmousemove = document.ontouchmove = function(e) {
+        if (isDragging) { e.preventDefault(); updateWatermarkPosition(e); }
+    };
+    document.onmouseup = document.ontouchend = function() { isDragging = false; };
+}
+
+function updateWatermarkPosition(e) {
+    var box = document.getElementById('watermarkPreviewBox');
+    var rect = box.getBoundingClientRect();
+    var clientX, clientY;
+    if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+    else { clientX = e.clientX; clientY = e.clientY; }
+    tempWatermarkX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    tempWatermarkY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    renderWatermarkPreview();
+}
+
+function updateWatermarkSize() {
+    tempWatermarkSize = document.getElementById('watermarkSizeSlider').value / 100;
+    renderWatermarkPreview();
+}
+
+function updateWatermarkOpacity() {
+    tempWatermarkOpacity = document.getElementById('watermarkOpacitySlider').value / 100;
+    renderWatermarkPreview();
+}
+
+function fillWatermark() {
+    if (!tempWatermarkImg) return;
+    var ratio = parseFloat(document.getElementById('ratio').value);
+    var wmRatio = tempWatermarkImg.width / tempWatermarkImg.height;
+    if (tempWatermarkRepeat) { tempWatermarkSize = 0.15; }
+    else { tempWatermarkSize = (wmRatio >= ratio) ? 1.0 : ratio / wmRatio; }
+    tempWatermarkX = 0.5; tempWatermarkY = 0.5;
+    document.getElementById('watermarkSizeSlider').value = Math.min(tempWatermarkSize * 100, 500);
+    renderWatermarkPreview();
+}
+
+function centerWatermark() {
+    tempWatermarkX = 0.5; tempWatermarkY = 0.5;
+    renderWatermarkPreview();
+}
+
+function toggleTile() {
+    tempWatermarkRepeat = !tempWatermarkRepeat;
+    updateTileBtn();
+    renderWatermarkPreview();
+}
+
+function updateTileBtn() {
+    var btn = document.getElementById('tileBtn');
+    btn.innerText = tempWatermarkRepeat ? '平铺:开' : '平铺:关';
+    btn.style.background = tempWatermarkRepeat ? '#34c759' : '#ff9500';
+}
+
+function renderWatermarkPreview() {
+    var box = document.getElementById('watermarkPreviewBox');
+    var boxW = box.offsetWidth, boxH = box.offsetHeight;
+    if (!boxW || !boxH || !tempWatermarkImg) return;
+    box.innerHTML = '';
+    document.getElementById('watermarkSizeLabel').innerText = Math.round(tempWatermarkSize * 100) + '%';
+    document.getElementById('watermarkOpacityLabel').innerText = Math.round(tempWatermarkOpacity * 100) + '%';
+    if (tempWatermarkRepeat) {
+        var div = document.createElement('div');
+        var wmW = boxW * tempWatermarkSize;
+        var wmH = wmW * (tempWatermarkImg.height / tempWatermarkImg.width);
+        div.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background-image:url(' + tempWatermarkImg.src + ');background-size:' + wmW + 'px ' + wmH + 'px;background-repeat:repeat;opacity:' + tempWatermarkOpacity + ';pointer-events:none;';
+        box.appendChild(div);
+    } else {
+        var wmW2 = boxW * tempWatermarkSize;
+        var wmH2 = wmW2 * (tempWatermarkImg.height / tempWatermarkImg.width);
+        var img = document.createElement('img');
+        img.src = tempWatermarkImg.src;
+        img.style.cssText = 'position:absolute;width:' + wmW2 + 'px;height:' + wmH2 + 'px;left:' + (tempWatermarkX * boxW - wmW2 / 2) + 'px;top:' + (tempWatermarkY * boxH - wmH2 / 2) + 'px;opacity:' + tempWatermarkOpacity + ';pointer-events:none;';
+        box.appendChild(img);
+    }
+}
+
+function confirmWatermarkEdit() {
+    if (!tempWatermarkImg) { alert('请先上传水印图片'); return; }
+    watermarkConfig = { img: tempWatermarkImg, x: tempWatermarkX, y: tempWatermarkY, size: tempWatermarkSize, opacity: tempWatermarkOpacity, repeat: tempWatermarkRepeat };
+    saveWatermarkToStorage();
+    document.getElementById('watermarkEditor').classList.add('hide');
+    document.getElementById('watermarkStatus').classList.remove('hide');
+    updateWatermarkInfo();
+    document.onmousemove = null; document.ontouchmove = null; isDragging = false;
+}
+
+function updateWatermarkInfo() {
+    if (!watermarkConfig) return;
+    var info = [Math.round(watermarkConfig.size * 100) + '%', Math.round(watermarkConfig.opacity * 100) + '%透明'];
+    if (watermarkConfig.repeat) info.push('平铺');
+    document.getElementById('watermarkInfo').innerText = '✅ ' + info.join(' | ');
+}
+
+function cancelWatermarkEdit() {
+    document.getElementById('watermarkEditor').classList.add('hide');
+    document.onmousemove = null; document.ontouchmove = null; isDragging = false;
+}
+
+function clearWatermark() {
+    watermarkConfig = null; localStorage.removeItem('puzzleWatermark');
+    document.getElementById('watermarkStatus').classList.add('hide');
+}
+
+function saveWatermarkToStorage() {
+    if (!watermarkConfig) return;
+    localStorage.setItem('puzzleWatermark', JSON.stringify({
+        src: watermarkConfig.img.src, x: watermarkConfig.x, y: watermarkConfig.y,
+        size: watermarkConfig.size, opacity: watermarkConfig.opacity, repeat: watermarkConfig.repeat
+    }));
+}
+
+async function loadWatermarkFromStorage() {
+    try {
+        var saved = localStorage.getItem('puzzleWatermark');
+        if (!saved) return;
+        var data = JSON.parse(saved);
+        var img = new Image();
+        await new Promise(function(resolve, reject) { img.onload = resolve; img.onerror = reject; img.src = data.src; });
+        watermarkConfig = { img: img, x: data.x, y: data.y, size: data.size, opacity: data.opacity || 1, repeat: data.repeat || false };
+        document.getElementById('watermarkToggle').checked = true;
+        toggleWatermarkMode();
+        document.getElementById('watermarkStatus').classList.remove('hide');
+        updateWatermarkInfo();
+    } catch (e) { console.error('水印加载失败', e); }
+}
+
+/* ========== 标价 ========== */
+function togglePriceMode() {
+    document.getElementById('pricePanel').classList.toggle('hide', !document.getElementById('priceToggle').checked);
+    if (document.getElementById('priceToggle').checked && images.length > 0) switchPriceMode();
+    rebuildPreview();
+}
+
+function switchPriceMode() {
+    var isUnified = document.getElementById('priceMode').value === 'unified';
+    document.getElementById('unifiedPriceBox').classList.toggle('hide', !isUnified);
+    document.getElementById('individualPriceBox').classList.toggle('hide', isUnified);
+    if (!isUnified && images.length > 0) {
+        var unifiedPrice = document.getElementById('unifiedPrice').value.trim();
+        if (unifiedPrice) {
+            var startNo = parseInt(document.getElementById('startNo').value) || 1;
+            images.forEach(function(_, i) { var num = startNo + i; if (!prices[num]) prices[num] = unifiedPrice; });
         }
-        rebuildPreview();
+        buildIndividualPriceInputs();
     }
+}
 
-    function switchPriceMode() {
-        const mode = document.getElementById('priceMode').value;
-        const isUnified = mode === 'unified';
-        document.getElementById('unifiedPriceBox').classList.toggle('hide', !isUnified);
-        document.getElementById('individualPriceBox').classList.toggle('hide', isUnified);
-        
-        if(!isUnified && images.length > 0) {
-            // 切换到单独设置时，先用统一价格填充所有图片
-            const unifiedPrice = document.getElementById('unifiedPrice').value.trim();
-            if(unifiedPrice) {
-                const startNo = parseInt(document.getElementById('startNo').value) || 1;
-                images.forEach((_, i) => {
-                    const num = startNo + i;
-                    // 如果该图片还没设置过价格，用统一价格填充
-                    if(!prices[num]) {
-                        prices[num] = unifiedPrice;
-                    }
-                });
+function applyUnifiedPrice() {
+    var price = document.getElementById('unifiedPrice').value.trim();
+    var startNo = parseInt(document.getElementById('startNo').value) || 1;
+    images.forEach(function(_, i) { var num = startNo + i; if (price) prices[num] = price; else delete prices[num]; });
+    rebuildPreview();
+}
+
+function parseNumberRange(input) {
+    var numbers = new Set();
+    if (!input || !input.trim()) return numbers;
+    input.split(/[,，\s]+/).forEach(function(part) {
+        part = part.trim();
+        if (part.includes('-')) {
+            var ab = part.split('-').map(Number);
+            if (!isNaN(ab[0]) && !isNaN(ab[1])) {
+                for (var n = Math.min(ab[0], ab[1]); n <= Math.max(ab[0], ab[1]); n++) numbers.add(n);
             }
-            buildIndividualPriceInputs();
-        }
-    }
-
-    function applyUnifiedPrice() {
-        const price = document.getElementById('unifiedPrice').value.trim();
-        const startNo = parseInt(document.getElementById('startNo').value) || 1;
-        images.forEach((_, i) => {
-            const num = startNo + i;
-            if(price) {
-                prices[num] = price;
-            } else {
-                delete prices[num];
-            }
-        });
-        rebuildPreview();
-    }
-
-    function buildIndividualPriceInputs() {
-        const container = document.getElementById('priceList');
-        container.innerHTML = '';
-        const startNo = parseInt(document.getElementById('startNo').value) || 1;
-        
-        images.forEach((_, i) => {
-            const num = startNo + i;
-            const div = document.createElement('div');
-            div.className = 'price-item';
-            div.innerHTML = `
-                <label>图片 ${num}</label>
-                <input type="text" data-num="${num}" value="${prices[num] || ''}" 
-                       placeholder="如：￥99" oninput="updateIndividualPrice(${num}, this.value)">
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function updateIndividualPrice(num, value) {
-        value = value.trim();
-        if(value) {
-            prices[num] = value;
         } else {
-            delete prices[num];
+            var n = parseInt(part);
+            if (!isNaN(n)) numbers.add(n);
         }
-        rebuildPreview();
-    }
+    });
+    return numbers;
+}
 
-    /* ========== IndexedDB ========== */
-    function openDB() {
-        return new Promise((resolve, reject) => {
-            const req = indexedDB.open('PuzzleToolArchive', 1);
-            req.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains('images')) {
-                    db.createObjectStore('images', { keyPath: 'id' });
-                }
-            };
-            req.onsuccess = (e) => resolve(e.target.result);
-            req.onerror = (e) => reject(e.target.error);
+function applyBatchPrice() {
+    var numbersInput = document.getElementById('batchPriceNumbers').value.trim();
+    var priceValue = document.getElementById('batchPriceValue').value.trim();
+    if (!numbersInput) { alert('请输入序号'); return; }
+    if (!priceValue) { alert('请输入价格'); return; }
+    var numbers = parseNumberRange(numbersInput);
+    if (numbers.size === 0) { alert('没有有效的序号'); return; }
+    numbers.forEach(function(num) { prices[num] = priceValue; });
+    rebuildPreview();
+    buildIndividualPriceInputs();
+    document.getElementById('batchPriceNumbers').value = '';
+    document.getElementById('batchPriceValue').value = '';
+    alert('✅ 已成功设置 ' + numbers.size + ' 个序号的价格');
+}
+
+function buildIndividualPriceInputs() {
+    var container = document.getElementById('priceList');
+    container.innerHTML = '';
+    var startNo = parseInt(document.getElementById('startNo').value) || 1;
+    var maxNum = startNo + images.length - 1;
+    var header = document.createElement('div');
+    header.className = 'price-item';
+    header.style.cssText = 'font-weight:bold;background:#f0f0f0;padding:8px;border-radius:6px;';
+    header.innerHTML = '<span style="flex:0.5;text-align:center;">序号</span><span style="flex:1.5;text-align:center;">价格</span>';
+    container.appendChild(header);
+    for (var num = startNo; num <= maxNum; num++) {
+        var div = document.createElement('div');
+        div.className = 'price-item';
+        div.innerHTML = '<label style="flex:0.5;text-align:center;background:#f8f9fa;padding:8px;border-radius:4px;font-weight:bold;">' + num + '</label><input type="text" value="' + (prices[num] || '') + '" placeholder="未设置" oninput="updateIndividualPrice(' + num + ', this.value)" style="flex:1.5;">';
+        container.appendChild(div);
+    }
+}
+
+function updateIndividualPrice(num, value) {
+    value = value.trim();
+    if (value) prices[num] = value; else delete prices[num];
+    rebuildPreview();
+}
+
+/* ========== 遮罩 ========== */
+function toggleMaskMode() {
+    document.getElementById('maskPanel').classList.toggle('hide', !document.getElementById('maskToggle').checked);
+    rebuildPreview();
+}
+
+function setMaskType(type) {
+    maskType = type;
+    document.getElementById('blackMaskBtn').classList.toggle('active', type === 'black');
+    document.getElementById('redCrossBtn').classList.toggle('active', type === 'red-cross');
+    if (maskedNums.size > 0) rebuildPreview();
+}
+
+function updateMaskOpacity() {
+    maskOpacity = document.getElementById('maskOpacitySlider').value / 100;
+    document.getElementById('maskOpacityLabel').innerText = Math.round(maskOpacity * 100) + '%';
+    if (maskedNums.size > 0) rebuildPreview();
+}
+
+function applyMask() {
+    var input = document.getElementById('maskInput').value.trim();
+    if (!input) return alert('请输入序号');
+    maskedNums.clear();
+    var numbers = parseNumberRange(input);
+    numbers.forEach(function(num) { maskedNums.add(num); });
+    saveMasksToStorage();
+    document.getElementById('maskInfo').innerText = '🖤 已遮罩: ' + Array.from(maskedNums).sort(function(a, b) { return a - b; }).join(', ');
+    document.getElementById('maskStatus').classList.remove('hide');
+    document.getElementById('maskInput').value = '';
+    rebuildPreview();
+}
+
+function clearMask() {
+    maskedNums.clear(); clearMasksFromStorage();
+    document.getElementById('maskStatus').classList.add('hide');
+    document.getElementById('maskInput').value = '';
+    rebuildPreview();
+}
+
+/* ========== IndexedDB ========== */
+function openDB() {
+    return new Promise(function(resolve, reject) {
+        var req = indexedDB.open('PuzzleToolArchive', 1);
+        req.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('images')) db.createObjectStore('images', { keyPath: 'id' });
+        };
+        req.onsuccess = function(e) { resolve(e.target.result); };
+        req.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+async function getArchiveCount() {
+    try {
+        var db = await openDB();
+        var tx = db.transaction('images', 'readonly');
+        return new Promise(function(r) {
+            var req = tx.objectStore('images').count();
+            req.onsuccess = function() { r(req.result); };
+            req.onerror = function() { r(0); };
         });
-    }
+    } catch (e) { return 0; }
+}
 
-    async function getArchiveCount() {
-        try {
-            const db = await openDB();
-            const tx = db.transaction('images', 'readonly');
-            const store = tx.objectStore('images');
-            return new Promise(resolve => {
-                const req = store.count();
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(0);
-            });
-        } catch(e) { return 0; }
-    }
+async function saveImagesToDB(imgs) {
+    var db = await openDB();
+    var tx = db.transaction('images', 'readwrite');
+    var store = tx.objectStore('images');
+    store.clear();
+    imgs.forEach(function(img, i) { store.put({ id: i, src: img.src }); });
+    return new Promise(function(r, j) { tx.oncomplete = r; tx.onerror = j; });
+}
 
-    async function saveImagesToDB(imgs) {
-        const db = await openDB();
-        const tx = db.transaction('images', 'readwrite');
-        const store = tx.objectStore('images');
-        store.clear();
-        imgs.forEach((img, i) => {
-            store.put({ id: i, src: img.src });
-        });
-        return new Promise((resolve, reject) => {
-            tx.oncomplete = resolve;
-            tx.onerror = reject;
-        });
-    }
+async function loadImagesFromDB() {
+    var db = await openDB();
+    var tx = db.transaction('images', 'readonly');
+    var req = tx.objectStore('images').getAll();
+    return new Promise(function(r, j) {
+        req.onsuccess = function() { r(req.result.sort(function(a, b) { return a.id - b.id; })); };
+        req.onerror = j;
+    });
+}
 
-    async function loadImagesFromDB() {
-        const db = await openDB();
-        const tx = db.transaction('images', 'readonly');
-        const store = tx.objectStore('images');
-        const req = store.getAll();
-        return new Promise((resolve, reject) => {
-            req.onsuccess = () => {
-                const records = req.result.sort((a, b) => a.id - b.id);
-                resolve(records);
-            };
-            req.onerror = reject;
-        });
-    }
+async function clearDB() {
+    var db = await openDB();
+    var tx = db.transaction('images', 'readwrite');
+    tx.objectStore('images').clear();
+    return new Promise(function(r) { tx.oncomplete = r; });
+}
 
-    async function clearDB() {
-        const db = await openDB();
-        const tx = db.transaction('images', 'readwrite');
-        tx.objectStore('images').clear();
-        return new Promise((resolve) => { tx.oncomplete = resolve; });
-    }
+function loadImageFromSrc(src) {
+    return new Promise(function(r, j) {
+        var img = new Image();
+        img.onload = function() { r(img); };
+        img.onerror = j;
+        img.src = src;
+    });
+}
 
-    function loadImageFromSrc(src) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = src;
-        });
-    }
+/* ========== localStorage ========== */
+function saveMasksToStorage() {
+    localStorage.setItem('puzzleMaskedNums', JSON.stringify(Array.from(maskedNums)));
+    localStorage.setItem('puzzleMaskType', maskType);
+    localStorage.setItem('puzzleMaskOpacity', String(maskOpacity));
+}
 
-    /* ========== localStorage ========== */
-    function saveMasksToStorage() {
-        localStorage.setItem('puzzleMaskedNums', JSON.stringify([...maskedNums]));
-    }
-    function loadMasksFromStorage() {
-        try {
-            const saved = localStorage.getItem('puzzleMaskedNums');
-            if (saved) maskedNums = new Set(JSON.parse(saved));
-        } catch(e) {}
-    }
-    function clearMasksFromStorage() {
-        localStorage.removeItem('puzzleMaskedNums');
-    }
-    function savePricesToStorage() {
-        localStorage.setItem('puzzlePrices', JSON.stringify(prices));
-    }
-    function loadPricesFromStorage() {
-        try {
-            const saved = localStorage.getItem('puzzlePrices');
-            if(saved) prices = JSON.parse(saved);
-        } catch(e) {}
-    }
+function loadMasksFromStorage() {
+    try {
+        var s = localStorage.getItem('puzzleMaskedNums');
+        if (s) maskedNums = new Set(JSON.parse(s));
+        var type = localStorage.getItem('puzzleMaskType');
+        if (type) maskType = type;
+        var opacity = localStorage.getItem('puzzleMaskOpacity');
+        if (opacity) maskOpacity = parseFloat(opacity);
+    } catch (e) { }
+}
 
-    layoutSel.onchange = function() {
-        const isCustom = this.value === 'custom';
-        document.getElementById('customBox').classList.toggle('hide', !isCustom);
-        if(!isCustom) {
-            document.getElementById('rows').value = this.value;
-            document.getElementById('cols').value = this.value;
+function clearMasksFromStorage() {
+    localStorage.removeItem('puzzleMaskedNums');
+    localStorage.removeItem('puzzleMaskType');
+    localStorage.removeItem('puzzleMaskOpacity');
+}
+
+function savePricesToStorage() {
+    localStorage.setItem('puzzlePrices', JSON.stringify(prices));
+}
+
+function loadPricesFromStorage() {
+    try {
+        var s = localStorage.getItem('puzzlePrices');
+        if (s) prices = JSON.parse(s);
+    } catch (e) { }
+}
+
+/* ========== 布局 ========== */
+layoutSel.onchange = function() {
+    var isCustom = this.value === 'custom';
+    document.getElementById('customBox').classList.toggle('hide', !isCustom);
+    if (!isCustom) {
+        document.getElementById('rows').value = this.value;
+        document.getElementById('cols').value = this.value;
+    }
+    updateInfo();
+};
+
+document.getElementById('rows').oninput = updateInfo;
+document.getElementById('cols').oninput = updateInfo;
+document.getElementById('startNo').oninput = function() {
+    rebuildPreview();
+    if (document.getElementById('priceMode').value === 'individual' && images.length > 0) {
+        buildIndividualPriceInputs();
+    }
+};
+
+function updateInfo() {
+    if (images.length === 0) return;
+    var r = parseInt(document.getElementById('rows').value) || 1;
+    var c = parseInt(document.getElementById('cols').value) || 1;
+    var perPage = r * c;
+    var maxPages = Math.ceil(images.length / perPage);
+    msgBox.innerText = images.length + ' 张图，每页 ' + perPage + ' 张，最多 ' + maxPages + ' 张';
+    if (parseInt(outCountInput.value) > maxPages) outCountInput.value = maxPages;
+}
+
+/* ========== Loading ========== */
+function showLoading(text) {
+    document.getElementById('loadingText').innerText = text;
+    document.getElementById('loading').classList.remove('hide');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.add('hide');
+}
+
+/* ========== 预览 ========== */
+function rebuildPreview() {
+    var preview = document.getElementById('preview');
+    preview.innerHTML = '';
+    if (images.length === 0) {
+        preview.classList.add('hide');
+        document.getElementById('count').innerText = '0';
+        return;
+    }
+    preview.classList.remove('hide');
+    var startNo = parseInt(document.getElementById('startNo').value) || 1;
+    var priceEnabled = document.getElementById('priceToggle').checked;
+    var numberEnabled = document.getElementById('numberToggle').checked;
+    var maskEnabled = document.getElementById('maskToggle').checked;
+    images.forEach(function(img, i) {
+        var num = startNo + i;
+        var div = document.createElement('div');
+        div.className = 'thumb';
+        var isMasked = maskedNums.has(num) && maskEnabled;
+        var price = prices[num] || '';
+        var priceHTML = priceEnabled && price ? '<span class="price-badge">' + price + '</span>' : '';
+        var numHTML = numberEnabled ? '<span class="num-badge">' + num + '</span>' : '';
+        var maskHTML = '';
+        if (isMasked) {
+            if (maskType === 'black') maskHTML = '<div class="mask-overlay">已遮罩</div>';
+            else maskHTML = '<div class="mask-overlay" style="background:rgba(0,0,0,0.7);"><div style="color:#ff453a;font-size:20px;font-weight:bold;">❌</div></div>';
         }
-        updateInfo();
-    };
+        div.innerHTML = '<img src="' + img.src + '">' + numHTML + priceHTML + maskHTML;
+        preview.appendChild(div);
+    });
+    document.getElementById('count').innerText = images.length;
+    updateInfo();
+}
 
-    document.getElementById('rows').oninput = updateInfo;
-    document.getElementById('cols').oninput = updateInfo;
-    document.getElementById('startNo').oninput = function() { 
-        rebuildPreview();
-        if(document.getElementById('priceMode').value === 'individual' && images.length > 0) {
-            buildIndividualPriceInputs();
-        }
-    };
-
-    function updateInfo() {
-        if(images.length === 0) return;
-        const r = parseInt(document.getElementById('rows').value) || 1;
-        const c = parseInt(document.getElementById('cols').value) || 1;
-        const perPage = r * c;
-        const maxPages = Math.ceil(images.length / perPage);
-        msgBox.innerText = `已选 ${images.length} 张图，每页 ${perPage} 张，最多可出 ${maxPages} 张拼图。`;
-        if(parseInt(outCountInput.value) > maxPages) outCountInput.value = maxPages;
-    }
-
-    const showLoading = (text) => {
-        document.getElementById('loadingText').innerText = text;
-        document.getElementById('loading').classList.remove('hide');
-    };
-    const hideLoading = () => document.getElementById('loading').classList.add('hide');
-
-    function rebuildPreview() {
-        const preview = document.getElementById('preview');
-        preview.innerHTML = '';
-        if(images.length === 0) { preview.classList.add('hide'); return; }
-        preview.classList.remove('hide');
-        const startNo = parseInt(document.getElementById('startNo').value) || 1;
-        const priceEnabled = document.getElementById('priceToggle').checked;
-        
-        images.forEach((img, i) => {
-            const num = startNo + i;
-            const div = document.createElement('div');
-            div.className = 'thumb';
-            const isMasked = maskedNums.has(num);
-            const price = prices[num] || '';
-            const priceHTML = priceEnabled && price ? `<span class="price-badge">${price}</span>` : '';
-            div.innerHTML = `<img src="${img.src}"><span class="num-badge">${num}</span>${priceHTML}${isMasked ? '<div class="mask-overlay">已遮罩</div>' : ''}`;
-            preview.appendChild(div);
-        });
-        document.getElementById('count').innerText = images.length;
-    }
-
-    async function saveArchive() {
-        if(!images.length) return alert('没有图片可存档');
-        showLoading('正在存档到本地...');
-        
-        try {
-            await saveImagesToDB(images);
-            savePricesToStorage();
-            document.getElementById('archiveStatus').classList.remove('hide');
-            document.getElementById('maskSection').classList.remove('hide');
-            document.getElementById('archiveInfo').innerText = `✅ 已存档 ${images.length} 张图片（关闭浏览器后仍可恢复）`;
-            hideLoading();
-        } catch(e) {
-            hideLoading();
-            alert('存档失败: ' + e.message);
-        }
-    }
-
-    async function restoreArchive() {
-        showLoading('正在恢复存档...');
-        try {
-            const records = await loadImagesFromDB();
-            if(!records || records.length === 0) {
-                hideLoading();
-                return alert('没有存档可恢复');
-            }
-            
-            images = [];
-            for(let j = 0; j < records.length; j++) {
-                document.getElementById('loadingText').innerText = `恢复中 ${j+1}/${records.length}...`;
-                const img = await loadImageFromSrc(records[j].src);
-                images.push(img);
-            }
-            
-            loadPricesFromStorage();
-            rebuildPreview();
-            updateInfo();
-            
-            if(Object.keys(prices).length > 0) {
-                document.getElementById('priceToggle').checked = true;
-                togglePriceMode();
-            }
-            
-            document.getElementById('archiveInfo').innerText = `✅ 已恢复 ${images.length} 张图片`;
-            hideLoading();
-        } catch(e) {
-            hideLoading();
-            alert('恢复失败: ' + e.message);
-        }
-    }
-
-    async function deleteArchive() {
-        if(!confirm('确定删除存档？此操作不可恢复。')) return;
-        showLoading('正在删除存档...');
-        try {
-            await clearDB();
-            document.getElementById('archiveStatus').classList.add('hide');
-            if(images.length === 0 && maskedNums.size === 0) {
-                document.getElementById('maskSection').classList.add('hide');
-            }
-            hideLoading();
-        } catch(e) {
-            hideLoading();
-            alert('删除失败: ' + e.message);
-        }
-    }
-
-    function applyMask() {
-        const input = document.getElementById('maskInput').value.trim();
-        if(!input) return alert('请输入要遮罩的序号');
-        
-        const parts = input.split(/[,，\s]+/);
-        parts.forEach(part => {
-            part = part.trim();
-            if(!part) return;
-            if(part.includes('-')) {
-                const [a, b] = part.split('-').map(Number);
-                if(!isNaN(a) && !isNaN(b)) {
-                    for(let n = Math.min(a,b); n <= Math.max(a,b); n++) maskedNums.add(n);
-                }
-            } else {
-                const n = parseInt(part);
-                if(!isNaN(n)) maskedNums.add(n);
-            }
-        });
-        
+/* ========== 存档 ========== */
+async function saveArchive() {
+    if (!images.length) return alert('没有图片可存档');
+    showLoading('存档中...');
+    try {
+        await saveImagesToDB(images);
+        savePricesToStorage();
         saveMasksToStorage();
-        
-        const sorted = [...maskedNums].sort((a,b) => a-b);
-        document.getElementById('maskInfo').innerText = `🖤 已遮罩序号: ${sorted.join(', ')}（共 ${sorted.length} 个）`;
-        document.getElementById('maskStatus').classList.remove('hide');
-        document.getElementById('maskInput').value = '';
-        rebuildPreview();
-    }
-
-    function clearMask() {
-        maskedNums.clear();
-        clearMasksFromStorage();
-        document.getElementById('maskStatus').classList.add('hide');
-        document.getElementById('maskInput').value = '';
-        rebuildPreview();
-    }
-
-    async function processFiles(files) {
-        if(files.length === 0) return;
-        showLoading('加载图片中...');
-
-        for (let file of files) {
-            try {
-                const img = await loadImageAndCompress(file);
-                images.push(img);
-                document.getElementById('count').innerText = images.length;
-            } catch (err) { console.error(err); }
-        }
-        rebuildPreview();
-        updateInfo();
-        
-        if(document.getElementById('priceToggle').checked && 
-           document.getElementById('priceMode').value === 'individual') {
-            buildIndividualPriceInputs();
-        }
-        
+        document.getElementById('archiveStatus').classList.remove('hide');
+        document.getElementById('archiveInfo').innerText = '✅ 已存档 ' + images.length + ' 张图片';
         hideLoading();
+    } catch (e) {
+        hideLoading();
+        alert('存档失败: ' + e.message);
     }
+}
 
-    function loadImageAndCompress(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const maxDim = 1200; 
-                    let w = img.width, h = img.height;
+async function restoreArchive() {
+    showLoading('恢复中...');
+    try {
+        var records = await loadImagesFromDB();
+        if (!records || records.length === 0) { hideLoading(); alert('没有存档'); return; }
+        images = [];
+        for (var j = 0; j < records.length; j++) {
+            document.getElementById('loadingText').innerText = '加载图片 ' + (j + 1) + '/' + records.length + '...';
+            images.push(await loadImageFromSrc(records[j].src));
+        }
+        loadPricesFromStorage();
+        loadMasksFromStorage();
+        rebuildPreview();
+        if (maskedNums.size > 0) {
+            document.getElementById('maskToggle').checked = true;
+            toggleMaskMode();
+            setMaskType(maskType);
+            document.getElementById('maskOpacitySlider').value = maskOpacity * 100;
+            document.getElementById('maskOpacityLabel').innerText = Math.round(maskOpacity * 100) + '%';
+            document.getElementById('maskInfo').innerText = '🖤 已遮罩: ' + Array.from(maskedNums).sort(function(a, b) { return a - b; }).join(', ');
+            document.getElementById('maskStatus').classList.remove('hide');
+        }
+        if (Object.keys(prices).length > 0) {
+            document.getElementById('priceToggle').checked = true;
+            togglePriceMode();
+        }
+        document.getElementById('archiveInfo').innerText = '✅ 已恢复 ' + images.length + ' 张图片';
+        hideLoading();
+    } catch (e) {
+        hideLoading();
+        alert('恢复失败: ' + e.message);
+    }
+}
+
+async function deleteArchive() {
+    if (!confirm('确定删除存档？')) return;
+    showLoading('删除中...');
+    try { await clearDB(); document.getElementById('archiveStatus').classList.add('hide'); hideLoading(); }
+    catch (e) { hideLoading(); alert('删除失败'); }
+}
+
+/* ========== 图片导入 ========== */
+async function processFiles(files) {
+    if (files.length === 0) return;
+    showLoading('加载图片...');
+    var newImages = [];
+    for (var i = 0; i < files.length; i++) {
+        try {
+            document.getElementById('loadingText').innerText = '处理图片 ' + (i + 1) + '/' + files.length + '...';
+            var img = await loadImageAndCompress(files[i]);
+            newImages.push(img);
+            document.getElementById('count').innerText = images.length + newImages.length;
+        } catch (e) {
+            console.error('图片加载失败:', files[i].name, e);
+        }
+    }
+    images = images.concat(newImages);
+    rebuildPreview();
+    if (document.getElementById('priceToggle').checked && document.getElementById('priceMode').value === 'individual') {
+        buildIndividualPriceInputs();
+    }
+    hideLoading();
+}
+
+function loadImageAndCompress(file) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                try {
+                    var maxDim = 1600;
+                    var w = img.width, h = img.height;
                     if (w > maxDim || h > maxDim) {
-                        const scale = maxDim / Math.max(w, h);
-                        w *= scale; h *= scale;
+                        var scale = maxDim / Math.max(w, h);
+                        w = Math.round(w * scale);
+                        h = Math.round(h * scale);
                     }
-                    const cvs = document.createElement('canvas');
+                    var cvs = document.createElement('canvas');
                     cvs.width = w; cvs.height = h;
-                    cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const newImg = new Image();
-                    newImg.onload = () => resolve(newImg);
-                    newImg.onerror = reject;
-                    newImg.src = cvs.toDataURL('image/jpeg', 0.8);
-                };
-                img.onerror = reject;
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    document.getElementById('file').onchange = function(e) {
-        processFiles(Array.from(e.target.files));
-        this.value = '';
-    };
-
-    async function generateAll() {
-        if (!images.length) return alert('请先添加图片');
-        
-        const r = parseInt(document.getElementById('rows').value) || 4;
-        const c = parseInt(document.getElementById('cols').value) || 4;
-        const numToGen = parseInt(outCountInput.value) || 1;
-        const perPage = r * c;
-
-        const container = document.getElementById('resultsContainer');
-        container.innerHTML = '';
-        
-        showLoading(`正在生成 ${numToGen} 张拼图...`);
-
-        for(let i = 0; i < numToGen; i++) {
-            const startIdx = i * perPage;
-            const endIdx = Math.min(startIdx + perPage, images.length);
-            const batch = images.slice(startIdx, endIdx);
-            
-            if(batch.length === 0) break;
-
-            document.getElementById('loadingText').innerText = `正在生成第 ${i+1}/${numToGen} 张...`;
-            const canvas = await drawSingleGrid(batch, r, c, i + 1);
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'result-item';
-            wrapper.innerHTML = `<div class="result-title">第 ${i+1} 张（图片 ${startIdx+1} - ${endIdx}）</div>`;
-            wrapper.appendChild(canvas);
-            
-            const dlBtn = document.createElement('button');
-            dlBtn.className = 'btn green';
-            dlBtn.innerText = `💾 保存第 ${i+1} 张`;
-            dlBtn.onclick = () => downloadCanvas(canvas, i + 1);
-            wrapper.appendChild(dlBtn);
-            
-            container.appendChild(wrapper);
-        }
-
-        hideLoading();
-        window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
-    }
-
-    function drawSingleGrid(batch, r, c, pageNum) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const ratio = parseFloat(document.getElementById('ratio').value);
-                const userFontSize = parseInt(document.getElementById('fontSize').value) || 120;
-                const userFontColor = document.getElementById('fontColor').value;
-                const startNoBase = parseInt(document.getElementById('startNo').value) || 1;
-                const priceEnabled = document.getElementById('priceToggle').checked;
-
-                let cellW = isIOS ? 800 : 1000;
-                if (r * c > 40) cellW = 600;
-                const cellH = cellW / ratio;
-                
-                let totalW = c * cellW;
-                let totalH = r * cellH;
-
-                const maxPixels = isIOS ? 16000000 : 40000000;
-                if (totalW * totalH > maxPixels) {
-                    const scale = Math.sqrt(maxPixels / (totalW * totalH));
-                    totalW *= scale; totalH *= scale; cellW *= scale;
+                    var ctx = cvs.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    var dataUrl = cvs.toDataURL('image/jpeg', 0.82);
+                    var newImg = new Image();
+                    newImg.onload = function() { resolve(newImg); };
+                    newImg.onerror = function(err) { reject(err); };
+                    newImg.src = dataUrl;
+                } catch (err) {
+                    reject(err);
                 }
+            };
+            img.onerror = function(err) { reject(err); };
+            img.src = e.target.result;
+        };
+        reader.onerror = function(err) { reject(err); };
+        reader.readAsDataURL(file);
+    });
+}
 
-                const canvas = document.createElement('canvas');
-                canvas.width = totalW;
-                canvas.height = totalH;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+/* ========== 生成拼图 ========== */
+async function generateAll() {
+    if (!images.length) return alert('请先添加图片');
+    var r = parseInt(document.getElementById('rows').value) || 4;
+    var c = parseInt(document.getElementById('cols').value) || 4;
+    var numToGen = parseInt(outCountInput.value) || 1;
+    var perPage = r * c;
+    var container = document.getElementById('resultsContainer');
+    container.innerHTML = '';
+    generatedCanvases = [];
+    showLoading('生成 ' + numToGen + ' 张...');
+    for (var i = 0; i < numToGen; i++) {
+        var startIdx = i * perPage;
+        var endIdx = Math.min(startIdx + perPage, images.length);
+        var batch = images.slice(startIdx, endIdx);
+        if (batch.length === 0) break;
+        document.getElementById('loadingText').innerText = '第 ' + (i + 1) + '/' + numToGen + ' 张...';
+        var canvas = await drawSingleGrid(batch, r, c, i + 1);
+        generatedCanvases.push({ canvas: canvas, index: i + 1, startIdx: startIdx + 1, endIdx: endIdx });
+    }
+    hideLoading();
+    if (generatedCanvases.length >= 3) renderBatchView(container);
+    else renderSingleView(container);
+    window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
+}
 
-                batch.forEach((img, i) => {
-                    const col = i % c;
-                    const row = Math.floor(i / c);
-                    const x = col * cellW;
-                    const y = row * (cellW / ratio);
-                    const h = cellW / ratio;
-                    
-                    const currentNum = startNoBase + ((pageNum - 1) * (r * c)) + i;
-                    const isMasked = maskedNums.has(currentNum);
+function renderSingleView(container) {
+    generatedCanvases.forEach(function(item) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'result-item';
+        wrapper.innerHTML = '<div class="result-title">第 ' + item.index + ' 张</div>';
+        wrapper.appendChild(item.canvas);
+        var dlBtn = document.createElement('button');
+        dlBtn.className = 'btn green';
+        dlBtn.innerText = '💾 保存';
+        dlBtn.onclick = (function(cvs, idx) { return function() { downloadCanvas(cvs, idx); }; })(item.canvas, item.index);
+        wrapper.appendChild(dlBtn);
+        container.appendChild(wrapper);
+    });
+}
 
-                    if(isMasked) {
-                        ctx.fillStyle = '#000000';
+function renderBatchView(container) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'result-item';
+    wrapper.innerHTML = '<div class="result-title">✅ 已生成 ' + generatedCanvases.length + ' 张</div>';
+    var grid = document.createElement('div');
+    grid.className = 'batch-grid';
+    generatedCanvases.forEach(function(item) {
+        var thumb = document.createElement('div');
+        thumb.className = 'batch-thumb';
+        var thumbImg = document.createElement('img');
+        thumbImg.src = item.canvas.toDataURL('image/jpeg', 0.3);
+        thumb.appendChild(thumbImg);
+        thumb.innerHTML += '<span class="batch-num">' + item.index + '</span>';
+        thumb.onclick = (function(it) { return function() { previewSingle(it); }; })(item);
+        grid.appendChild(thumb);
+    });
+    wrapper.appendChild(grid);
+    var progress = document.createElement('div');
+    progress.className = 'download-progress';
+    progress.id = 'downloadProgress';
+    progress.innerText = '建议优先使用打包下载';
+    wrapper.appendChild(progress);
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'btn-row-2';
+    var zipBtn = document.createElement('button');
+    zipBtn.className = 'btn green';
+    zipBtn.style.marginTop = '0';
+    zipBtn.innerHTML = '📦 打包下载';
+    zipBtn.onclick = downloadAllAsZip;
+    var singleBtn = document.createElement('button');
+    singleBtn.className = 'btn';
+    singleBtn.style.background = '#007aff';
+    singleBtn.style.marginTop = '0';
+    singleBtn.innerHTML = '⬇️ 逐张下载';
+    singleBtn.onclick = downloadAll;
+    btnWrap.appendChild(zipBtn);
+    btnWrap.appendChild(singleBtn);
+    wrapper.appendChild(btnWrap);
+    container.appendChild(wrapper);
+}
+
+function previewSingle(item) {
+    var win = window.open();
+    if (win) {
+        win.document.write('<title>第' + item.index + '张</title><img src="' + item.canvas.toDataURL('image/jpeg', 0.92) + '" style="max-width:100%;display:block;margin:0 auto;"/><p style="text-align:center;font-family:sans-serif;">长按图片可保存</p>');
+    }
+}
+
+/* ========== 下载 ========== */
+function canvasToBlob(canvas, quality) {
+    quality = quality || 0.92;
+    return new Promise(function(resolve, reject) {
+        canvas.toBlob(function(blob) {
+            if (blob) resolve(blob); else reject(new Error('导出图片失败'));
+        }, 'image/jpeg', quality);
+    });
+}
+
+async function downloadCanvasAsync(canvas, index) {
+    var quality = 0.92;
+    var blob = await canvasToBlob(canvas, quality);
+    while (blob.size > 29.5 * 1024 * 1024 && quality > 0.1) {
+        quality -= 0.1;
+        blob = await canvasToBlob(canvas, quality);
+    }
+    var fileName = '拼图_' + index + '_' + Date.now() + '.jpg';
+    if (isIOS) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var win = window.open();
+            if (win) {
+                win.document.write('<title>长按保存</title><h2 style="text-align:center;font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + reader.result + '" style="width:100%;"/>');
+            } else {
+                location.href = reader.result;
+            }
+        };
+        reader.readAsDataURL(blob);
+        return;
+    }
+    var url = URL.createObjectURL(blob);
+    try {
+        var link = document.createElement('a');
+        link.download = fileName;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (e) {
+        console.error('直接下载失败', e);
+        window.open(url, '_blank');
+    }
+    setTimeout(function() { URL.revokeObjectURL(url); }, 3000);
+}
+
+async function downloadAll() {
+    var progress = document.getElementById('downloadProgress');
+    for (var i = 0; i < generatedCanvases.length; i++) {
+        progress.innerText = '下载 ' + (i + 1) + '/' + generatedCanvases.length + '...';
+        await downloadCanvasAsync(generatedCanvases[i].canvas, generatedCanvases[i].index);
+        await new Promise(function(r) { setTimeout(r, 600); });
+    }
+    progress.innerHTML = '<span style="color:#34c759;">✅ 已尝试逐张下载完成</span>';
+}
+
+async function downloadAllAsZip() {
+    if (!generatedCanvases.length) { alert('没有可下载的拼图'); return; }
+    if (typeof JSZip === 'undefined') { alert('ZIP组件加载失败，请检查网络后刷新页面重试'); return; }
+    showLoading('正在打包...');
+    var progress = document.getElementById('downloadProgress');
+    try {
+        var zip = new JSZip();
+        for (var i = 0; i < generatedCanvases.length; i++) {
+            progress.innerText = '打包 ' + (i + 1) + '/' + generatedCanvases.length + '...';
+            document.getElementById('loadingText').innerText = '打包 ' + (i + 1) + '/' + generatedCanvases.length + '...';
+            var item = generatedCanvases[i];
+            var blob = await canvasToBlob(item.canvas, 0.92);
+            zip.file('拼图_' + item.index + '.jpg', blob);
+        }
+        progress.innerText = '正在生成ZIP...';
+        document.getElementById('loadingText').innerText = '正在生成ZIP...';
+        var zipBlob = await zip.generateAsync(
+            { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+            function(metadata) { document.getElementById('loadingText').innerText = 'ZIP生成中 ' + Math.round(metadata.percent) + '%'; }
+        );
+        var fileName = '拼图打包_' + Date.now() + '.zip';
+        var url = URL.createObjectURL(zipBlob);
+        try {
+            var link = document.createElement('a');
+            link.href = url; link.download = fileName;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        } catch (e) {
+            window.open(url, '_blank');
+        }
+        setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+        hideLoading();
+        progress.innerHTML = '<span style="color:#34c759;">✅ ZIP已下载</span>';
+    } catch (e) {
+        hideLoading();
+        progress.innerHTML = '<span style="color:#ff3b30;">❌ 打包失败</span>';
+        alert('打包下载失败：' + e.message);
+    }
+}
+
+function downloadCanvas(canvas, index) {
+    showLoading('正在导出...');
+    setTimeout(async function() {
+        try { await downloadCanvasAsync(canvas, index); }
+        catch (e) { alert('下载失败，请尝试长按预览图保存'); }
+        hideLoading();
+    }, 100);
+}
+
+/* ========== 绘制网格 ========== */
+function drawSingleGrid(batch, r, c, pageNum) {
+    return new Promise(function(resolve) {
+        setTimeout(function() {
+            var ratio = parseFloat(document.getElementById('ratio').value);
+            var userFontSize = parseInt(document.getElementById('fontSize').value) || 120;
+            var userFontColor = document.getElementById('fontColor').value;
+            var userStrokeColor = document.getElementById('strokeColor').value;
+            var startNoBase = parseInt(document.getElementById('startNo').value) || 1;
+            var priceEnabled = document.getElementById('priceToggle').checked;
+            var watermarkEnabled = document.getElementById('watermarkToggle').checked && watermarkConfig;
+            var numberEnabled = document.getElementById('numberToggle').checked;
+            var maskEnabled = document.getElementById('maskToggle').checked;
+
+            var cellW = isIOS ? 800 : 1000;
+            if (r * c > 40) cellW = 600;
+            var cellH = cellW / ratio;
+            var totalW = c * cellW;
+            var totalH = r * cellH;
+            var maxPixels = isIOS ? 16000000 : 40000000;
+            if (totalW * totalH > maxPixels) {
+                var sc = Math.sqrt(maxPixels / (totalW * totalH));
+                totalW = Math.round(totalW * sc);
+                totalH = Math.round(totalH * sc);
+                cellW = Math.round(cellW * sc);
+                cellH = Math.round(cellH * sc);
+            }
+
+            var canvas = document.createElement('canvas');
+            canvas.width = totalW; canvas.height = totalH;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            batch.forEach(function(img, i) {
+                var col = i % c;
+                var row = Math.floor(i / c);
+                var x = col * cellW;
+                var y = row * cellH;
+                var h = cellH;
+                var sameStart = document.getElementById('sameStartToggle').checked;
+var currentNum;
+if (sameStart) {
+    currentNum = startNoBase + i;
+} else {
+    currentNum = startNoBase + ((pageNum - 1) * (r * c)) + i;
+}
+                var isMasked = maskedNums.has(currentNum) && maskEnabled;
+
+                var imgR = img.width / img.height;
+                var dw = cellW, dh = h, dx = 0, dy = 0;
+                if (imgR > ratio) { dw = dh * imgR; dx = (cellW - dw) / 2; }
+                else { dh = dw / imgR; dy = (h - dh) / 2; }
+
+                ctx.save();
+                ctx.beginPath(); ctx.rect(x, y, cellW, h); ctx.clip();
+                ctx.drawImage(img, x + dx, y + dy, dw, dh);
+                ctx.restore();
+
+                if (isMasked) {
+                    ctx.save();
+                    ctx.globalAlpha = maskOpacity;
+                    if (maskType === 'black') {
+                        ctx.fillStyle = 'rgba(0,0,0,0.7)';
                         ctx.fillRect(x, y, cellW, h);
                     } else {
-                        const imgR = img.width / img.height;
-                        let dw = cellW, dh = h, dx = 0, dy = 0;
-                        if (imgR > ratio) {
-                            dw = dh * imgR; dx = (cellW - dw) / 2;
-                        } else {
-                            dh = dw / imgR; dy = (h - dh) / 2;
-                        }
+                        ctx.fillStyle = '#ff3b30';
+                        var crossWidth = cellW * 0.12;
+                        var crossLength = Math.sqrt(cellW * cellW + h * h) * 0.7;
+                        var angle = Math.atan2(h, cellW);
                         ctx.save();
-                        ctx.beginPath();
-                        ctx.rect(x, y, cellW, h);
-                        ctx.clip();
-                        ctx.drawImage(img, x + dx, y + dy, dw, dh);
+                        ctx.translate(x + cellW / 2, y + h / 2);
+                        ctx.rotate(angle);
+                        ctx.fillRect(-crossLength / 2, -crossWidth / 2, crossLength, crossWidth);
+                        ctx.restore();
+                        ctx.save();
+                        ctx.translate(x + cellW / 2, y + h / 2);
+                        ctx.rotate(-angle);
+                        ctx.fillRect(-crossLength / 2, -crossWidth / 2, crossLength, crossWidth);
                         ctx.restore();
                     }
+                    ctx.restore();
+                }
 
-                    const fontSize = cellW * (userFontSize / 1000);
-                    ctx.font = `bold ${fontSize}px -apple-system, sans-serif`; 
+                if (watermarkEnabled && !isMasked && watermarkConfig) {
+                    var wmImg = watermarkConfig.img;
+                    var wmW = cellW * watermarkConfig.size;
+                    var wmH = wmW * (wmImg.height / wmImg.width);
+                    var wmOpacity = watermarkConfig.opacity || 1;
+                    ctx.save();
+                    ctx.globalAlpha = wmOpacity;
+                    ctx.beginPath(); ctx.rect(x, y, cellW, h); ctx.clip();
+                    if (watermarkConfig.repeat) {
+                        var gapX = wmW, gapY = wmH;
+                        if (gapX > 10 && gapY > 10) {
+                            for (var wy = y; wy < y + h; wy += gapY) {
+                                for (var wx = x; wx < x + cellW; wx += gapX) {
+                                    ctx.drawImage(wmImg, wx, wy, wmW, wmH);
+                                }
+                            }
+                        }
+                    } else {
+                        var wmX = x + (watermarkConfig.x * cellW) - (wmW / 2);
+                        var wmY = y + (watermarkConfig.y * h) - (wmH / 2);
+                        ctx.drawImage(wmImg, wmX, wmY, wmW, wmH);
+                    }
+                    ctx.restore();
+                }
+
+                if (numberEnabled) {
+                    var fontSize = cellW * (userFontSize / 1000);
+                    ctx.font = 'bold ' + fontSize + 'px -apple-system, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
-                    const tx = x + cellW / 2;
-                    const ty = y + h - (cellW * 0.02);
-
-                    ctx.lineWidth = fontSize / 10; 
+                    var tx = x + cellW / 2;
+                    var ty = y + h - (cellW * 0.02);
+                    ctx.lineWidth = fontSize / 10;
                     ctx.lineJoin = 'round';
-                    
-                    if(isMasked) {
+                    if (isMasked) {
                         ctx.strokeStyle = '#333';
                         ctx.strokeText(currentNum, tx, ty);
                         ctx.fillStyle = '#ffffff';
                     } else {
-                        ctx.strokeStyle = 'white';
+                        ctx.strokeStyle = userStrokeColor;
                         ctx.strokeText(currentNum, tx, ty);
                         ctx.fillStyle = userFontColor;
                     }
                     ctx.fillText(currentNum, tx, ty);
-
-                    if(priceEnabled && prices[currentNum] && !isMasked) {
-                        const priceText = prices[currentNum];
-                        const priceFontSize = cellW * 0.08;
-                        ctx.font = `bold ${priceFontSize}px -apple-system, sans-serif`;
-                        ctx.textAlign = 'right';
-                        ctx.textBaseline = 'top';
-                        
-                        const padding = cellW * 0.03;
-                        const priceX = x + cellW - padding;
-                        const priceY = y + padding;
-                        
-                        const metrics = ctx.measureText(priceText);
-                        const textWidth = metrics.width;
-                        const textHeight = priceFontSize;
-                        
-                        const bgPadding = cellW * 0.015;
-                        ctx.fillStyle = 'rgba(255, 59, 48, 0.9)';
-                        ctx.beginPath();
-                        ctx.roundRect(
-                            priceX - textWidth - bgPadding * 2,
-                            priceY,
-                            textWidth + bgPadding * 2,
-                            textHeight + bgPadding * 1.5,
-                            cellW * 0.01
-                        );
-                        ctx.fill();
-                        
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillText(priceText, priceX - bgPadding, priceY + bgPadding * 0.7);
-                    }
-                });
-                resolve(canvas);
-            }, 50);
-        });
-    }
-
-    function downloadCanvas(canvas, index) {
-        showLoading("正在压缩...");
-        setTimeout(() => {
-            let quality = 0.92;
-            let dataURL = canvas.toDataURL('image/jpeg', quality);
-            const checkSize = (str) => (str.length * 0.75) / 1024 / 1024;
-
-            while (checkSize(dataURL) > 29.5 && quality > 0.1) {
-                quality -= 0.1;
-                dataURL = canvas.toDataURL('image/jpeg', quality);
-            }
-
-            if (isIOS) {
-                const win = window.open();
-                if(win){
-                    win.document.write('<title>长按保存</title><h2 style="text-align:center;font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + dataURL + '" style="width:100%;"/>');
-                } else {
-                    location.href = dataURL;
                 }
-            } else {
-                const link = document.createElement('a');
-                link.download = `拼图_${index}_${Date.now()}.jpg`;
-                link.href = dataURL;
-                link.click();
-            }
-            hideLoading();
-        }, 100);
-    }
 
-    (async function init() {
-        loadMasksFromStorage();
-        loadPricesFromStorage();
-        
-        const archiveCount = await getArchiveCount();
-        
-        if(archiveCount > 0) {
-            document.getElementById('archiveStatus').classList.remove('hide');
-            document.getElementById('maskSection').classList.remove('hide');
-            document.getElementById('archiveInfo').innerText = `📦 发现本地存档（${archiveCount} 张图片），点击恢复`;
-        }
-        
-        if(maskedNums.size > 0) {
-            document.getElementById('maskSection').classList.remove('hide');
-            const sorted = [...maskedNums].sort((a,b) => a-b);
-            document.getElementById('maskInfo').innerText = `🖤 已遮罩序号: ${sorted.join(', ')}（共 ${sorted.length} 个）`;
-            document.getElementById('maskStatus').classList.remove('hide');
-        }
-    })();
+                if (priceEnabled && prices[currentNum] && !isMasked) {
+                    var priceText = prices[currentNum];
+                    var priceFontSize = cellW * 0.08;
+                    ctx.font = 'bold ' + priceFontSize + 'px -apple-system, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'top';
+                    var padding = cellW * 0.03;
+                    var priceX = x + cellW - padding;
+                    var priceY = y + padding;
+                    var metrics = ctx.measureText(priceText);
+                    var textWidth = metrics.width;
+                    var textHeight = priceFontSize;
+                    var bgPadding = cellW * 0.015;
+                    ctx.fillStyle = 'rgba(255,59,48,0.9)';
+                    ctx.beginPath();
+                    var radius = cellW * 0.01;
+                    var left = priceX - textWidth - bgPadding * 2;
+                    var top2 = priceY;
+                    var width = textWidth + bgPadding * 2;
+                    var height = textHeight + bgPadding * 1.5;
+                    if (ctx.roundRect) {
+                        ctx.roundRect(left, top2, width, height, radius);
+                    } else {
+                        ctx.moveTo(left + radius, top2);
+                        ctx.lineTo(left + width - radius, top2);
+                        ctx.quadraticCurveTo(left + width, top2, left + width, top2 + radius);
+                        ctx.lineTo(left + width, top2 + height - radius);
+                        ctx.quadraticCurveTo(left + width, top2 + height, left + width - radius, top2 + height);
+                        ctx.lineTo(left + radius, top2 + height);
+                        ctx.quadraticCurveTo(left, top2 + height, left, top2 + height - radius);
+                        ctx.lineTo(left, top2 + radius);
+                        ctx.quadraticCurveTo(left, top2, left + radius, top2);
+                        ctx.closePath();
+                    }
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(priceText, priceX - bgPadding, priceY + bgPadding * 0.7);
+                }
+            });
+
+            resolve(canvas);
+        }, 50);
+    });
+}
+
+/* ========== 初始化 ========== */
+(async function init() {
+    loadMasksFromStorage();
+    loadPricesFromStorage();
+    await loadWatermarkFromStorage();
+    document.getElementById('maskOpacitySlider').value = maskOpacity * 100;
+    document.getElementById('maskOpacityLabel').innerText = Math.round(maskOpacity * 100) + '%';
+    setMaskType(maskType);
+    var archiveCount = await getArchiveCount();
+    if (archiveCount > 0) {
+        document.getElementById('archiveStatus').classList.remove('hide');
+        document.getElementById('archiveInfo').innerText = '📦 发现存档（' + archiveCount + ' 张图片），点击恢复';
+    }
+    if (maskedNums.size > 0) {
+        document.getElementById('maskToggle').checked = true;
+        toggleMaskMode();
+        document.getElementById('maskInfo').innerText = '🖤 已遮罩: ' + Array.from(maskedNums).sort(function(a, b) { return a - b; }).join(', ');
+        document.getElementById('maskStatus').classList.remove('hide');
+    }
+    updateInfo();
+})();
 </script>
 </body>
 </html>
