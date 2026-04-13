@@ -698,7 +698,7 @@ function updateMaskOpacity() {
 function applyMask() {
     var input = document.getElementById('maskInput').value.trim();
     if (!input) return alert('请输入序号');
-    maskedNums.clear();
+    // 修改处 1：去掉了 maskedNums.clear(); 允许叠加
     var numbers = parseNumberRange(input);
     numbers.forEach(function(num) { maskedNums.add(num); });
     saveMasksToStorage();
@@ -1083,10 +1083,10 @@ function renderBatchView(container) {
 }
 
 function previewSingle(item) {
-    var win = window.open();
-    if (win) {
-        win.document.write('<title>第' + item.index + '张</title><img src="' + item.canvas.toDataURL('image/jpeg', 0.92) + '" style="max-width:100%;display:block;margin:0 auto;"/><p style="text-align:center;font-family:sans-serif;">长按图片可保存</p>');
-    }
+    // 修改处 2：iOS Safari 统一使用新页面写 HTML 让用户长按保存
+    var dataUrl = item.canvas.toDataURL('image/jpeg', 0.92);
+    document.write('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>长按保存</title></head><body style="margin:0;padding:10px;text-align:center;background:#f2f4f8;"><h2 style="font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + dataUrl + '" style="max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/><br><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;font-size:16px;background:#007aff;color:white;border:none;border-radius:8px;">返回工具</button></body></html>');
+    document.close();
 }
 
 /* ========== 下载 ========== */
@@ -1101,25 +1101,23 @@ function canvasToBlob(canvas, quality) {
 
 async function downloadCanvasAsync(canvas, index) {
     var quality = 0.92;
-    var blob = await canvasToBlob(canvas, quality);
-    while (blob.size > 29.5 * 1024 * 1024 && quality > 0.1) {
+    var dataUrl = canvas.toDataURL('image/jpeg', quality);
+    
+    while ((dataUrl.length * 0.75) > 29.5 * 1024 * 1024 && quality > 0.1) {
         quality -= 0.1;
-        blob = await canvasToBlob(canvas, quality);
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
     }
+
     var fileName = '拼图_' + index + '_' + Date.now() + '.jpg';
+    
+    // 修改处 2：如果是 iOS，使用 document.write 覆盖当前页面以提示长按保存
     if (isIOS) {
-        var reader = new FileReader();
-        reader.onload = function() {
-            var win = window.open();
-            if (win) {
-                win.document.write('<title>长按保存</title><h2 style="text-align:center;font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + reader.result + '" style="width:100%;"/>');
-            } else {
-                location.href = reader.result;
-            }
-        };
-        reader.readAsDataURL(blob);
+        document.write('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>长按保存</title></head><body style="margin:0;padding:10px;text-align:center;background:#f2f4f8;"><h2 style="font-family:sans-serif;margin-top:20px;">长按下方图片保存</h2><img src="' + dataUrl + '" style="max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/><br><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;font-size:16px;background:#007aff;color:white;border:none;border-radius:8px;">返回工具</button></body></html>');
+        document.close();
         return;
     }
+    
+    var blob = await canvasToBlob(canvas, quality);
     var url = URL.createObjectURL(blob);
     try {
         var link = document.createElement('a');
@@ -1140,6 +1138,8 @@ async function downloadAll() {
     for (var i = 0; i < generatedCanvases.length; i++) {
         progress.innerText = '下载 ' + (i + 1) + '/' + generatedCanvases.length + '...';
         await downloadCanvasAsync(generatedCanvases[i].canvas, generatedCanvases[i].index);
+        // 如果是iOS，第一张就跳转并退出循环
+        if (isIOS) return; 
         await new Promise(function(r) { setTimeout(r, 600); });
     }
     progress.innerHTML = '<span style="color:#34c759;">✅ 已尝试逐张下载完成</span>';
